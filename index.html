@@ -464,64 +464,95 @@
       <h2 class="section-title">Parámetros del sitio y del sistema</h2>
 
       <div class="field-row">
-        <label for="hsp">Horas de sol pico (HSP)
-          <span class="hint">kWh/m²/día de tu zona — consulta un mapa de irradiancia</span>
+        <label for="panelW">Panel solar
+          <span class="hint">Según disponibilidad de inventario actual</span>
         </label>
-        <input type="number" id="hsp" step="0.1" min="1" value="4.5">
-      </div>
-
-      <div class="field-row">
-        <label for="autonomy">Días de autonomía
-          <span class="hint">Días sin sol que el banco de baterías debe cubrir</span>
-        </label>
-        <input type="number" id="autonomy" step="0.5" min="0.5" value="1.5">
-      </div>
-
-      <div class="field-row">
-        <label for="systemLoss">Eficiencia global del sistema
-          <span class="hint">Pérdidas por inversor, cableado y temperatura</span>
-        </label>
-        <select id="systemLoss">
-          <option value="0.90">90% — instalación óptima</option>
-          <option value="0.85" selected>85% — instalación típica</option>
-          <option value="0.80">80% — instalación con pérdidas altas</option>
+        <select id="panelW">
+          <option value="585">585 W</option>
+          <option value="625" selected>625 W</option>
         </select>
       </div>
 
       <div class="field-row">
-        <label for="batteryType">Tipo de batería</label>
-        <select id="batteryType">
-          <option value="0.5">Plomo-ácido (DoD 50%)</option>
-          <option value="0.8">AGM/Gel (DoD 80%)</option>
-          <option value="0.9" selected>Litio LiFePO4 (DoD 90%)</option>
-        </select>
-      </div>
-
-      <div class="field-row">
-        <label for="systemVoltage">Voltaje del sistema</label>
-        <select id="systemVoltage">
-          <option value="12">12 V</option>
-          <option value="24" selected>24 V</option>
-          <option value="48">48 V</option>
-        </select>
-      </div>
-
-      <div class="field-row">
-        <label for="panelW">Potencia por panel</label>
-        <input type="number" id="panelW" step="10" min="50" value="450">
-        <span></span>
-      </div>
-
-      <div class="field-row">
-        <label for="battAh">Capacidad por batería (Ah)</label>
-        <input type="number" id="battAh" step="10" min="10" value="100">
-      </div>
-
-      <div class="field-row">
-        <label for="safetyFactor">Factor de seguridad del inversor
-          <span class="hint">Sobre la carga simultánea máxima estimada</span>
+        <label for="battKwh">Batería (por unidad)
+          <span class="hint">Capacidad LFP disponible en catálogo</span>
         </label>
-        <input type="number" id="safetyFactor" step="0.05" min="1" value="1.25">
+        <select id="battKwh">
+          <option value="2.9">2.9 kWh</option>
+          <option value="4">4 kWh</option>
+          <option value="11" selected>11 kWh</option>
+          <option value="16">16 kWh</option>
+        </select>
+      </div>
+
+      <div class="field-row">
+        <label for="autonomy">Autonomía nocturna (horas)
+          <span class="hint">Horas sin sol que el banco de baterías debe cubrir</span>
+        </label>
+        <input type="number" id="autonomy" step="1" min="1" max="48" value="14">
+      </div>
+
+      <div class="field-row">
+        <label for="voltageInfo">Voltaje del sistema
+          <span class="hint">Se ajusta solo según el inversor requerido</span>
+        </label>
+        <span class="mono" id="voltageInfo" style="font-size:13px; color: var(--text);">24 V</span>
+      </div>
+
+      <div class="override-box">
+        <div class="checkbox-row">
+          <input type="checkbox" id="advancedCheck">
+          <label for="advancedCheck">Configurar parámetros avanzados</label>
+        </div>
+
+        <div id="advancedFields" style="display:none">
+          <div class="field-row">
+            <label for="hsp">Horas de sol pico (HSP)
+              <span class="hint">kWh/m²/día de tu zona — consulta un mapa de irradiancia</span>
+            </label>
+            <input type="number" id="hsp" step="0.1" min="1" value="3.6">
+          </div>
+
+          <div class="field-row">
+            <label for="systemLoss">Eficiencia global del sistema
+              <span class="hint">Pérdidas por inversor, cableado y temperatura</span>
+            </label>
+            <select id="systemLoss">
+              <option value="0.90">90% — instalación óptima</option>
+              <option value="0.85" selected>85% — instalación típica</option>
+              <option value="0.80">80% — instalación con pérdidas altas</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label for="batteryType">Química de batería (DoD)
+              <span class="hint">Nuestro catálogo usa LFP — cambia solo si es un caso especial</span>
+            </label>
+            <select id="batteryType">
+              <option value="0.5">Plomo-ácido (DoD 50%)</option>
+              <option value="0.8">AGM/Gel (DoD 80%)</option>
+              <option value="0.9" selected>Litio LFP (DoD 90%)</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label for="voltageOverride">Forzar voltaje del sistema
+              <span class="hint">Anula el cálculo automático si lo necesitas</span>
+            </label>
+            <select id="voltageOverride">
+              <option value="auto" selected>Automático</option>
+              <option value="24">Forzar 24 V</option>
+              <option value="48">Forzar 48 V</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label for="safetyFactor">Factor de seguridad del inversor
+              <span class="hint">Sobre la carga simultánea máxima estimada</span>
+            </label>
+            <input type="number" id="safetyFactor" step="0.05" min="1" value="1.25">
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -764,10 +795,19 @@
   });
   document.getElementById('overrideValue').addEventListener('input', recalc);
 
-  ['hsp','autonomy','systemLoss','batteryType','systemVoltage','panelW','battAh','safetyFactor']
-    .forEach(id => document.getElementById(id).addEventListener('input', recalc));
-  ['systemLoss','batteryType','systemVoltage'].forEach(id =>
-    document.getElementById(id).addEventListener('change', recalc));
+  const advancedCheck = document.getElementById('advancedCheck');
+  const advancedFields = document.getElementById('advancedFields');
+  advancedCheck.addEventListener('change', () => {
+    advancedFields.style.display = advancedCheck.checked ? 'block' : 'none';
+    recalc();
+  });
+
+  ['hsp','autonomy','systemLoss','batteryType','voltageOverride','panelW','battKwh','safetyFactor']
+    .forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('input', recalc);
+      el.addEventListener('change', recalc);
+    });
 
   function fmt(n, decimals=0){
     return Number(n).toLocaleString('es-CO', { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
@@ -792,24 +832,35 @@
       dailyWh = kwh * 1000;
     }
 
-    const hsp = parseFloat(document.getElementById('hsp').value) || 4.5;
-    const autonomy = parseFloat(document.getElementById('autonomy').value) || 1;
+    const hsp = parseFloat(document.getElementById('hsp').value) || 3.6;
+    const autonomyHours = parseFloat(document.getElementById('autonomy').value) || 14;
     const eff = parseFloat(document.getElementById('systemLoss').value) || 0.85;
-    const dod = parseFloat(document.getElementById('batteryType').value) || 0.8;
-    const voltage = parseFloat(document.getElementById('systemVoltage').value) || 24;
-    const panelW = parseFloat(document.getElementById('panelW').value) || 450;
-    const battAh = parseFloat(document.getElementById('battAh').value) || 100;
+    const dod = parseFloat(document.getElementById('batteryType').value) || 0.9;
+    const panelW = parseFloat(document.getElementById('panelW').value) || 625;
+    const battKwh = parseFloat(document.getElementById('battKwh').value) || 11;
     const safety = parseFloat(document.getElementById('safetyFactor').value) || 1.25;
 
     const adjustedWh = dailyWh / eff;
     const fvPowerNeeded = adjustedWh / hsp;
     const numPanels = panelW > 0 ? Math.ceil(fvPowerNeeded / panelW) : 0;
 
-    const bankWh = (dailyWh * autonomy) / dod;
-    const bankAh = bankWh / voltage;
-    const numBatteries = battAh > 0 ? Math.ceil(bankAh / battAh) : 0;
+    const autonomyDays = autonomyHours / 24;
+    const bankWh = (dailyWh * autonomyDays) / dod;
+    const bankKwh = bankWh / 1000;
+    const numBatteries = battKwh > 0 ? Math.ceil(bankKwh / battKwh) : 0;
 
     const inverterW = peakLoadW * safety;
+
+    // Voltaje: automático según el inversor requerido, o forzado en modo avanzado
+    const voltageOverride = document.getElementById('voltageOverride').value;
+    let voltage;
+    if(voltageOverride === 'auto'){
+      voltage = inverterW <= 4000 ? 24 : 48;
+    } else {
+      voltage = parseFloat(voltageOverride);
+    }
+    document.getElementById('voltageInfo').textContent = voltage + ' V';
+
     const controllerA = voltage > 0 ? (fvPowerNeeded / voltage) * 1.25 : 0;
 
     document.getElementById('outConsumo').textContent = fmt(dailyWh);
@@ -822,7 +873,7 @@
     document.getElementById('outPanelesSub').textContent = `De ${fmt(panelW)} Wp cada uno`;
 
     document.getElementById('outBaterias').textContent = fmt(numBatteries);
-    document.getElementById('outBateriasSub').textContent = `De ${fmt(battAh)} Ah — banco ${fmt(bankAh)} Ah`;
+    document.getElementById('outBateriasSub').textContent = `De ${fmt(battKwh,1)} kWh — banco ${fmt(bankKwh,1)} kWh`;
 
     document.getElementById('outInversor').textContent = fmt(inverterW);
     document.getElementById('outControlador').textContent = fmt(controllerA, 1);
@@ -832,10 +883,10 @@
     document.getElementById('svgBaterias').textContent = numBatteries + ' bat.';
     document.getElementById('svgCarga').textContent = fmt(peakLoadW) + ' W';
 
-    const bankKwh = bankWh / 1000;
     const kitResult = recommendKit(fvPowerNeeded, bankKwh, inverterW);
     renderKitCard(kitResult, fvPowerNeeded, bankKwh, inverterW);
     window.__currentKitResult = kitResult;
+    window.__currentVoltage = voltage;
   }
 
   recalc();
@@ -846,15 +897,18 @@
     overrideCheck.checked = false;
     overrideRow.style.display = 'none';
     document.getElementById('overrideValue').value = 0;
-    document.getElementById('hsp').value = 4.5;
-    document.getElementById('autonomy').value = 1.5;
+    advancedCheck.checked = false;
+    advancedFields.style.display = 'none';
+    document.getElementById('hsp').value = 3.6;
+    document.getElementById('autonomy').value = 14;
     document.getElementById('systemLoss').value = '0.85';
     document.getElementById('batteryType').value = '0.9';
-    document.getElementById('systemVoltage').value = '24';
-    document.getElementById('panelW').value = 450;
-    document.getElementById('battAh').value = 100;
+    document.getElementById('voltageOverride').value = 'auto';
+    document.getElementById('panelW').value = '625';
+    document.getElementById('battKwh').value = '11';
     document.getElementById('safetyFactor').value = 1.25;
     document.getElementById('projectName').value = '';
+    document.getElementById('clientName').value = '';
     recalc();
   });
 
@@ -878,12 +932,12 @@
       fecha: new Date().toISOString(),
       parametros: {
         hsp: parseFloat(document.getElementById('hsp').value),
-        dias_autonomia: parseFloat(document.getElementById('autonomy').value),
+        horas_autonomia: parseFloat(document.getElementById('autonomy').value),
         eficiencia_sistema: parseFloat(document.getElementById('systemLoss').value),
         dod_bateria: parseFloat(document.getElementById('batteryType').value),
-        voltaje_sistema: parseFloat(document.getElementById('systemVoltage').value),
+        voltaje_sistema: window.__currentVoltage || null,
         potencia_panel_w: parseFloat(document.getElementById('panelW').value),
-        capacidad_bateria_ah: parseFloat(document.getElementById('battAh').value),
+        capacidad_bateria_kwh: parseFloat(document.getElementById('battKwh').value),
         factor_seguridad_inversor: parseFloat(document.getElementById('safetyFactor').value)
       },
       equipos: appliances,
