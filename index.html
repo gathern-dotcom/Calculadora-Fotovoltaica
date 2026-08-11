@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dimensionador FV — Sistemas Aislados</title>
+<style>
+  :root{
+    --bg: #14181D;
+    --panel: #1E252B;
+    --panel-2: #232B32;
+    --border: #2A323A;
+    --amber: #F5A623;
+    --amber-dim: #C98419;
+    --green: #3ECF8E;
+    --text: #F0EDE6;
+    --muted: #8A94A0;
+    --danger: #E1615A;
+    --radius: 10px;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.45;
+    min-height: 100vh;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  .display{ font-family: 'Space Grotesk', 'Inter', sans-serif; }
+  .mono{ font-family: 'IBM Plex Mono', 'Courier New', monospace; }
+
+  header.top{
+    border-bottom: 1px solid var(--border);
+    padding: 20px 28px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header.top .brand{
+    display:flex; align-items:baseline; gap:10px;
+  }
+  header.top h1{
+    font-size: 19px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+  header.top .tag{
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+  header.top input.project-name{
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 4px 2px;
+    min-width: 220px;
+  }
+  header.top input.project-name:focus{
+    outline: none;
+    border-bottom-color: var(--amber);
+  }
+  header.top input.project-name::placeholder{ color: var(--muted); }
+
+  main{
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 28px;
+    display: grid;
+    grid-template-columns: minmax(340px, 460px) 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 900px){
+    main{ grid-template-columns: 1fr; padding: 16px; }
+  }
+
+  section.card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  section.card + section.card{ margin-top: 20px; }
+
+  h2.section-title{
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h2.section-title::before{
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--amber);
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  .field-row{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .field-row label{
+    font-size: 13px;
+    color: var(--text);
+  }
+  .field-row .hint{
+    display:block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  input[type=number], select{
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 7px 9px;
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    width: 110px;
+    text-align: right;
+  }
+  select{ width: auto; min-width: 110px; text-align: left; }
+  input:focus, select:focus{
+    outline: 2px solid var(--amber);
+    outline-offset: 1px;
+    border-color: var(--amber);
+  }
+
+  table.appliances{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin-bottom: 10px;
+  }
+  table.appliances th{
+    text-align: left;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 6px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.appliances td{
+    padding: 5px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.appliances input[type=text]{
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 5px;
+    padding: 6px 7px;
+    font-size: 12.5px;
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+  }
+  table.appliances input[type=number]{
+    width: 62px;
+    padding: 6px 6px;
+  }
+  table.appliances .col-sub{
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .remove-row{
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 2px 6px;
+    line-height: 1;
+  }
+  .remove-row:focus{ outline: 2px solid var(--amber); }
+
+  button.add-row{
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  button.add-row:hover{ border-color: var(--amber); color: var(--amber); }
+
+  .override-box{
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .checkbox-row{
+    display:flex; align-items:center; gap: 8px;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .checkbox-row input{ width: auto; }
+
+  /* Results */
+  .kpi-grid{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+  @media (max-width: 520px){ .kpi-grid{ grid-template-columns: 1fr; } }
+  .kpi{
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi::before{
+    content:'';
+    position: absolute;
+    top:0; left:0; bottom:0;
+    width: 3px;
+    background: var(--amber);
+  }
+  .kpi.battery::before{ background: var(--green); }
+  .kpi .kpi-label{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .kpi .kpi-value{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .kpi .kpi-value .unit{
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 4px;
+  }
+  .kpi .kpi-sub{
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* schematic */
+  .schematic{
+    margin-top: 20px;
+    padding: 18px 8px 6px;
+  }
+  .schematic svg{ width: 100%; height: auto; display:block; }
+  .flow-dash{
+    stroke-dasharray: 6 6;
+    animation: flowmove 1.4s linear infinite;
+  }
+  @keyframes flowmove{ to{ stroke-dashoffset: -24; } }
+  .node-label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    fill: var(--muted);
+  }
+  .node-value{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    fill: var(--text);
+  }
+
+  .actions{
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+  button.primary{
+    background: var(--amber);
+    color: #1A1300;
+    border: none;
+    border-radius: 7px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  button.primary:hover{ background: #ffb84d; }
+  button.secondary{
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 7px;
+    padding: 10px 16px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button.secondary:hover{ border-color: var(--muted); }
+  button:focus{ outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  .note{
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+
+  .footer-note{
+    text-align: center;
+    color: var(--muted);
+    font-size: 11.5px;
+    padding: 24px 0 32px;
+  }
+
+  /* Kit recommendation */
+  .kit-card{
+    border: 1px solid var(--amber);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(245,166,35,0.08), transparent 60%);
+    padding: 16px 18px;
+    margin-top: 4px;
+  }
+  .kit-card.warn{
+    border-color: var(--danger);
+    background: linear-gradient(180deg, rgba(225,97,90,0.08), transparent 60%);
+  }
+  .kit-card .kit-header{
+    display:flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+  .kit-card .kit-id{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .kit-card .kit-name{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .kit-card .kit-status{
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--green);
+  }
+  .kit-card.warn .kit-status{ color: var(--danger); }
+  .kit-specs{
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    font-size: 12.5px;
+  }
+  .kit-specs li{
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .kit-specs li span.k{ color: var(--muted); }
+  .kit-specs li span.v{ font-family: 'IBM Plex Mono', monospace; }
+  .kit-alt{
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1 class="display">☀ Dimensionador FV</h1>
+    <span class="tag">SISTEMA AISLADO / OFF-GRID</span>
+  </div>
+  <input class="project-name" id="projectName" type="text" placeholder="Nombre del proyecto / cliente…">
+</header>
+
+<main>
+  <!-- LEFT: INPUTS -->
+  <div>
+    <section class="card">
+      <h2 class="section-title">Consumo eléctrico diario</h2>
+      <table class="appliances" id="applianceTable">
+        <thead>
+          <tr>
+            <th>Equipo</th>
+            <th style="width:60px">Pot. (W)</th>
+            <th style="width:56px">Cant.</th>
+            <th style="width:56px">Hrs/día</th>
+            <th style="width:70px">Wh/día</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="applianceBody"></tbody>
+      </table>
+      <button class="add-row" id="addRow" type="button">+ Agregar equipo</button>
+
+      <div class="override-box">
+        <div class="checkbox-row">
+          <input type="checkbox" id="overrideCheck">
+          <label for="overrideCheck">Ingresar consumo total directamente (ignora la tabla)</label>
+        </div>
+        <div class="field-row" id="overrideRow" style="display:none">
+          <label for="overrideValue">Consumo total (kWh/día)</label>
+          <input type="number" id="overrideValue" step="0.1" min="0" value="0">
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Parámetros del sitio y del sistema</h2>
+
+      <div class="field-row">
+        <label for="hsp">Horas de sol pico (HSP)
+          <span class="hint">kWh/m²/día de tu zona — consulta un mapa de irradiancia</span>
+        </label>
+        <input type="number" id="hsp" step="0.1" min="1" value="4.5">
+      </div>
+
+      <div class="field-row">
+        <label for="autonomy">Días de autonomía
+          <span class="hint">Días sin sol que el banco de baterías debe cubrir</span>
+        </label>
+        <input type="number" id="autonomy" step="0.5" min="0.5" value="1.5">
+      </div>
+
+      <div class="field-row">
+        <label for="systemLoss">Eficiencia global del sistema
+          <span class="hint">Pérdidas por inversor, cableado y temperatura</span>
+        </label>
+        <select id="systemLoss">
+          <option value="0.90">90% — instalación óptima</option>
+          <option value="0.85" selected>85% — instalación típica</option>
+          <option value="0.80">80% — instalación con pérdidas altas</option>
+        </select>
+      </div>
+
+      <div class="field-row">
+        <label for="batteryType">Tipo de batería</label>
+        <select id="batteryType">
+          <option value="0.5">Plomo-ácido (DoD 50%)</option>
+          <option value="0.8">AGM/Gel (DoD 80%)</option>
+          <option value="0.9" selected>Litio LiFePO4 (DoD 90%)</option>
+        </select>
+      </div>
+
+      <div class="field-row">
+        <label for="systemVoltage">Voltaje del sistema</label>
+        <select id="systemVoltage">
+          <option value="12">12 V</option>
+          <option value="24" selected>24 V</option>
+          <option value="48">48 V</option>
+        </select>
+      </div>
+
+      <div class="field-row">
+        <label for="panelW">Potencia por panel</label>
+        <input type="number" id="panelW" step="10" min="50" value="450">
+        <span></span>
+      </div>
+
+      <div class="field-row">
+        <label for="battAh">Capacidad por batería (Ah)</label>
+        <input type="number" id="battAh" step="10" min="10" value="100">
+      </div>
+
+      <div class="field-row">
+        <label for="safetyFactor">Factor de seguridad del inversor
+          <span class="hint">Sobre la carga simultánea máxima estimada</span>
+        </label>
+        <input type="number" id="safetyFactor" step="0.05" min="1" value="1.25">
+      </div>
+    </section>
+  </div>
+
+  <!-- RIGHT: RESULTS -->
+  <div>
+    <section class="card">
+      <h2 class="section-title">Resultado del dimensionamiento</h2>
+
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">Consumo diario</div>
+          <div class="kpi-value"><span id="outConsumo">0</span><span class="unit">Wh/día</span></div>
+          <div class="kpi-sub" id="outConsumoKwh">0.00 kWh/día</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Potencia FV requerida</div>
+          <div class="kpi-value"><span id="outPotenciaFV">0</span><span class="unit">Wp</span></div>
+          <div class="kpi-sub" id="outFVsub">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Paneles solares</div>
+          <div class="kpi-value"><span id="outPaneles">0</span><span class="unit">unidades</span></div>
+          <div class="kpi-sub" id="outPanelesSub">—</div>
+        </div>
+        <div class="kpi battery">
+          <div class="kpi-label">Banco de baterías</div>
+          <div class="kpi-value"><span id="outBaterias">0</span><span class="unit">unidades</span></div>
+          <div class="kpi-sub" id="outBateriasSub">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Inversor mínimo</div>
+          <div class="kpi-value"><span id="outInversor">0</span><span class="unit">W</span></div>
+          <div class="kpi-sub" id="outInversorSub">Carga simultánea × factor de seguridad</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Controlador de carga</div>
+          <div class="kpi-value"><span id="outControlador">0</span><span class="unit">A</span></div>
+          <div class="kpi-sub">A tensión del sistema seleccionada</div>
+        </div>
+      </div>
+
+      <div class="schematic" id="schematicWrap">
+        <svg id="schematicSvg" viewBox="0 0 640 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- lines -->
+          <line x1="95" y1="60" x2="200" y2="60" stroke="#3A4450" stroke-width="2" class="flow-dash"/>
+          <line x1="255" y1="60" x2="360" y2="60" stroke="#3A4450" stroke-width="2" class="flow-dash"/>
+          <line x1="415" y1="60" x2="520" y2="60" stroke="#3A4450" stroke-width="2" class="flow-dash"/>
+          <line x1="360" y1="90" x2="360" y2="140" stroke="#3A4450" stroke-width="2" class="flow-dash"/>
+
+          <!-- sun -->
+          <circle cx="55" cy="60" r="26" fill="none" stroke="var(--amber)" stroke-width="2"/>
+          <text x="55" y="105" text-anchor="middle" class="node-label">SOL</text>
+          <text x="55" y="120" text-anchor="middle" class="node-value" id="svgHsp">4.5 HSP</text>
+
+          <!-- panel -->
+          <rect x="200" y="40" width="55" height="40" rx="4" fill="#232B32" stroke="var(--amber)" stroke-width="1.5"/>
+          <text x="227" y="105" text-anchor="middle" class="node-label">PANELES</text>
+          <text x="227" y="120" text-anchor="middle" class="node-value" id="svgPaneles">0</text>
+
+          <!-- battery -->
+          <rect x="360" y="40" width="55" height="40" rx="4" fill="#232B32" stroke="var(--green)" stroke-width="1.5"/>
+          <text x="387" y="105" text-anchor="middle" class="node-label">BATERÍAS</text>
+          <text x="387" y="120" text-anchor="middle" class="node-value" id="svgBaterias">0</text>
+
+          <!-- inverter -->
+          <rect x="360" y="140" width="55" height="0" fill="none"/>
+          <!-- load -->
+          <rect x="520" y="40" width="60" height="40" rx="4" fill="#232B32" stroke="#5B6572" stroke-width="1.5"/>
+          <text x="550" y="105" text-anchor="middle" class="node-label">CARGA</text>
+          <text x="550" y="120" text-anchor="middle" class="node-value" id="svgCarga">0 W</text>
+        </svg>
+      </div>
+
+      <p class="note">
+        Estos cálculos usan fórmulas estándar de dimensionamiento para sistemas aislados y son un punto de partida técnico.
+        Ajusta los factores de seguridad según tu criterio de ingeniería, normativa local y las condiciones reales del sitio.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Kit recomendado del catálogo</h2>
+      <div id="kitRecommendation"></div>
+    </section>
+
+    <section class="card">
+      <div class="actions">
+        <button class="primary" id="downloadBtn" type="button">Descargar proyecto (JSON)</button>
+        <button class="secondary" id="resetBtn" type="button">Restablecer valores</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<p class="footer-note">Dimensionador FV — cálculo de referencia para sistemas fotovoltaicos aislados</p>
+
+<script>
+(function(){
+  // Catálogo de kits — ajusta aquí si cambian specs, se agregan kits o hay precios
+  const KITS = [
+    { id:'C1', nombre:'KIT Hogar Mínimo', paneles:4, panelW:625,
+      inversor:'FOC Energy 3KW, 24V, 120/240V', inversorW:3000,
+      bateriaModelo:'LFP FOC Energy 12V, 2.9 kWh', bateriaCant:2, bateriaKwhUnit:2.9,
+      proteccionDC:'Combiner Box DC Suntree 2 in 1 out', soporte:2, cable:35 },
+    { id:'C2', nombre:'KIT Hogar Mínimo +', paneles:6, panelW:585,
+      inversor:'FOC Energy 3KW, 24V, 120/240V', inversorW:3000,
+      bateriaModelo:'LFP FOC Energy 12V, 4 kWh', bateriaCant:2, bateriaKwhUnit:4,
+      proteccionDC:'Combiner Box DC Suntree 3 in 1 out', soporte:3, cable:70 },
+    { id:'C3', nombre:'KIT Hogar Básico', paneles:6, panelW:625,
+      inversor:'FOC Energy 5KW, 48V, 120/240V', inversorW:5000,
+      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:1, bateriaKwhUnit:11,
+      proteccionDC:'Combiner Box DC Suntree 3 in 1 out', soporte:3, cable:70 },
+    { id:'C4', nombre:'KIT Hogar Básico +', paneles:8, panelW:625,
+      inversor:'FOC Energy 5KW, 48V, 120/240V', inversorW:5000,
+      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:1, bateriaKwhUnit:11,
+      proteccionDC:'Combiner Box DC Suntree 4 in 1 out', soporte:4, cable:100 },
+    { id:'C32', nombre:'KIT Hogar Básico2', paneles:9, panelW:625,
+      inversor:'FOC Energy 6.4KW, 48V, 120/240V', inversorW:6400,
+      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:1, bateriaKwhUnit:11,
+      proteccionDC:'Combiner Box DC Suntree 3 in 1 out', soporte:5, cable:74 },
+    { id:'C42', nombre:'KIT Hogar Max', paneles:12, panelW:585,
+      inversor:'FOC Energy 6.4KW, 48V, 120/240V', inversorW:6400,
+      bateriaModelo:'LFP FOC Energy 48V, 16 kWh', bateriaCant:1, bateriaKwhUnit:16,
+      proteccionDC:'Combiner Box DC Suntree 4 in 1 out', soporte:6, cable:110 },
+    { id:'C5', nombre:'KIT Hogar Full', paneles:11, panelW:625,
+      inversor:'Hybrid Inverter Sosen 8KW, 48V, 120/240V', inversorW:8000,
+      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:2, bateriaKwhUnit:11,
+      proteccionDC:'Combiner Box DC Suntree 2 in 2 out', soporte:7, cable:70 },
+    { id:'C6', nombre:'KIT Hogar Full 2', paneles:17, panelW:625,
+      inversor:'Hybrid Inverter Sosen 10KW, 48V, 120/240V', inversorW:10000,
+      bateriaModelo:'LFP FOC Energy 48V, 16 kWh', bateriaCant:2, bateriaKwhUnit:16,
+      proteccionDC:'Combiner Box DC Suntree 2 in 2 out', soporte:9, cable:74 },
+    { id:'C7', nombre:'KIT Hogar Full +', paneles:21, panelW:625,
+      inversor:'Hybrid Inverter Sosen 12KW, 48V, 120/240V', inversorW:12000,
+      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:2, bateriaKwhUnit:11,
+      proteccionDC:'Combiner Box DC Suntree 3 in 3 out', soporte:11, cable:98 },
+    { id:'C8', nombre:'KIT Hogar Full + VE', paneles:14, panelW:625,
+      inversor:'Hybrid Inverter Sosen 15KW, 48V, 120/240V', inversorW:15000,
+      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:2, bateriaKwhUnit:11,
+      proteccionDC:'Combiner Box DC Suntree 3 in 3 out', soporte:7, cable:98 }
+  ].map(k => ({
+    ...k,
+    totalWp: k.paneles * k.panelW,
+    totalBateriaKwh: k.bateriaCant * k.bateriaKwhUnit
+  }));
+
+  function recommendKit(neededWp, neededBankKwh, neededInverterW){
+    const candidatos = KITS.filter(k =>
+      k.totalWp >= neededWp &&
+      k.totalBateriaKwh >= neededBankKwh &&
+      k.inversorW >= neededInverterW
+    ).sort((a,b) => a.totalWp - b.totalWp);
+
+    if(candidatos.length > 0){
+      return { kit: candidatos[0], cumple: true };
+    }
+    // Ninguno cumple los tres a la vez: se sugiere el más grande como referencia
+    const masGrande = [...KITS].sort((a,b) => b.totalWp - a.totalWp)[0];
+    return { kit: masGrande, cumple: false };
+  }
+
+  function renderKitCard(result, neededWp, neededBankKwh, neededInverterW){
+    const { kit, cumple } = result;
+    const wrap = document.getElementById('kitRecommendation');
+    const cardClass = cumple ? 'kit-card' : 'kit-card warn';
+    const statusText = cumple
+      ? '✓ Cubre el requerimiento calculado'
+      : '⚠ Ningún kit estándar cubre esto — requiere cotización personalizada o combinar kits';
+
+    wrap.innerHTML = `
+      <div class="${cardClass}">
+        <div class="kit-header">
+          <div>
+            <span class="kit-id">${kit.id}</span>
+            <div class="kit-name">${kit.nombre}</div>
+          </div>
+          <span class="kit-status">${statusText}</span>
+        </div>
+        <ul class="kit-specs">
+          <li><span class="k">Paneles solares</span><span class="v">${kit.paneles} un · ${fmt(kit.panelW)} W · ${fmt(kit.totalWp)} Wp total</span></li>
+          <li><span class="k">Inversor</span><span class="v">${kit.inversor}</span></li>
+          <li><span class="k">Baterías</span><span class="v">${kit.bateriaCant} un · ${kit.bateriaModelo} · ${fmt(kit.totalBateriaKwh,1)} kWh total</span></li>
+          <li><span class="k">Protección DC</span><span class="v">${kit.proteccionDC}</span></li>
+          <li><span class="k">Soporte techo</span><span class="v">${kit.soporte} un (2 paneles c/u)</span></li>
+          <li><span class="k">Cable fotovoltaico</span><span class="v">${kit.cable} m</span></li>
+        </ul>
+        <div class="kit-alt">
+          Requerido: ${fmt(neededWp)} Wp · ${fmt(neededBankKwh,1)} kWh banco · ${fmt(neededInverterW)} W inversor
+        </div>
+      </div>
+    `;
+  }
+
+  const defaultAppliances = [
+    { name: 'Refrigerador', power: 150, qty: 1, hours: 24 },
+    { name: 'Bombillos LED', power: 10, qty: 6, hours: 5 },
+    { name: 'Televisor', power: 100, qty: 1, hours: 4 },
+    { name: 'Bomba de agua', power: 750, qty: 1, hours: 1 }
+  ];
+
+  const tbody = document.getElementById('applianceBody');
+
+  function rowTemplate(item){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" class="f-name" value="${item.name}"></td>
+      <td><input type="number" class="f-power" min="0" step="1" value="${item.power}"></td>
+      <td><input type="number" class="f-qty" min="1" step="1" value="${item.qty}"></td>
+      <td><input type="number" class="f-hours" min="0" step="0.5" max="24" value="${item.hours}"></td>
+      <td class="col-sub f-sub">0</td>
+      <td><button class="remove-row" type="button" aria-label="Eliminar equipo">×</button></td>
+    `;
+    tbody.appendChild(tr);
+    tr.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalc));
+    tr.querySelector('.remove-row').addEventListener('click', () => { tr.remove(); recalc(); });
+  }
+
+  defaultAppliances.forEach(rowTemplate);
+
+  document.getElementById('addRow').addEventListener('click', () => {
+    rowTemplate({ name: '', power: 0, qty: 1, hours: 0 });
+  });
+
+  const overrideCheck = document.getElementById('overrideCheck');
+  const overrideRow = document.getElementById('overrideRow');
+  overrideCheck.addEventListener('change', () => {
+    overrideRow.style.display = overrideCheck.checked ? 'grid' : 'none';
+    recalc();
+  });
+  document.getElementById('overrideValue').addEventListener('input', recalc);
+
+  ['hsp','autonomy','systemLoss','batteryType','systemVoltage','panelW','battAh','safetyFactor']
+    .forEach(id => document.getElementById(id).addEventListener('input', recalc));
+  ['systemLoss','batteryType','systemVoltage'].forEach(id =>
+    document.getElementById(id).addEventListener('change', recalc));
+
+  function fmt(n, decimals=0){
+    return Number(n).toLocaleString('es-CO', { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
+  }
+
+  function recalc(){
+    let dailyWh = 0;
+    let peakLoadW = 0;
+
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const power = parseFloat(tr.querySelector('.f-power').value) || 0;
+      const qty = parseFloat(tr.querySelector('.f-qty').value) || 0;
+      const hours = parseFloat(tr.querySelector('.f-hours').value) || 0;
+      const sub = power * qty * hours;
+      tr.querySelector('.f-sub').textContent = fmt(sub);
+      dailyWh += sub;
+      peakLoadW += power * qty;
+    });
+
+    if(overrideCheck.checked){
+      const kwh = parseFloat(document.getElementById('overrideValue').value) || 0;
+      dailyWh = kwh * 1000;
+    }
+
+    const hsp = parseFloat(document.getElementById('hsp').value) || 4.5;
+    const autonomy = parseFloat(document.getElementById('autonomy').value) || 1;
+    const eff = parseFloat(document.getElementById('systemLoss').value) || 0.85;
+    const dod = parseFloat(document.getElementById('batteryType').value) || 0.8;
+    const voltage = parseFloat(document.getElementById('systemVoltage').value) || 24;
+    const panelW = parseFloat(document.getElementById('panelW').value) || 450;
+    const battAh = parseFloat(document.getElementById('battAh').value) || 100;
+    const safety = parseFloat(document.getElementById('safetyFactor').value) || 1.25;
+
+    const adjustedWh = dailyWh / eff;
+    const fvPowerNeeded = adjustedWh / hsp;
+    const numPanels = panelW > 0 ? Math.ceil(fvPowerNeeded / panelW) : 0;
+
+    const bankWh = (dailyWh * autonomy) / dod;
+    const bankAh = bankWh / voltage;
+    const numBatteries = battAh > 0 ? Math.ceil(bankAh / battAh) : 0;
+
+    const inverterW = peakLoadW * safety;
+    const controllerA = voltage > 0 ? (fvPowerNeeded / voltage) * 1.25 : 0;
+
+    document.getElementById('outConsumo').textContent = fmt(dailyWh);
+    document.getElementById('outConsumoKwh').textContent = fmt(dailyWh/1000, 2) + ' kWh/día';
+
+    document.getElementById('outPotenciaFV').textContent = fmt(fvPowerNeeded);
+    document.getElementById('outFVsub').textContent = `Con ${hsp} HSP y ${(eff*100).toFixed(0)}% de eficiencia`;
+
+    document.getElementById('outPaneles').textContent = fmt(numPanels);
+    document.getElementById('outPanelesSub').textContent = `De ${fmt(panelW)} Wp cada uno`;
+
+    document.getElementById('outBaterias').textContent = fmt(numBatteries);
+    document.getElementById('outBateriasSub').textContent = `De ${fmt(battAh)} Ah — banco ${fmt(bankAh)} Ah`;
+
+    document.getElementById('outInversor').textContent = fmt(inverterW);
+    document.getElementById('outControlador').textContent = fmt(controllerA, 1);
+
+    document.getElementById('svgHsp').textContent = hsp + ' HSP';
+    document.getElementById('svgPaneles').textContent = numPanels + ' pan.';
+    document.getElementById('svgBaterias').textContent = numBatteries + ' bat.';
+    document.getElementById('svgCarga').textContent = fmt(peakLoadW) + ' W';
+
+    const bankKwh = bankWh / 1000;
+    const kitResult = recommendKit(fvPowerNeeded, bankKwh, inverterW);
+    renderKitCard(kitResult, fvPowerNeeded, bankKwh, inverterW);
+  }
+
+  recalc();
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    tbody.innerHTML = '';
+    defaultAppliances.forEach(rowTemplate);
+    overrideCheck.checked = false;
+    overrideRow.style.display = 'none';
+    document.getElementById('overrideValue').value = 0;
+    document.getElementById('hsp').value = 4.5;
+    document.getElementById('autonomy').value = 1.5;
+    document.getElementById('systemLoss').value = '0.85';
+    document.getElementById('batteryType').value = '0.9';
+    document.getElementById('systemVoltage').value = '24';
+    document.getElementById('panelW').value = 450;
+    document.getElementById('battAh').value = 100;
+    document.getElementById('safetyFactor').value = 1.25;
+    document.getElementById('projectName').value = '';
+    recalc();
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    const appliances = [];
+    tbody.querySelectorAll('tr').forEach(tr => {
+      appliances.push({
+        equipo: tr.querySelector('.f-name').value,
+        potencia_w: parseFloat(tr.querySelector('.f-power').value) || 0,
+        cantidad: parseFloat(tr.querySelector('.f-qty').value) || 0,
+        horas_dia: parseFloat(tr.querySelector('.f-hours').value) || 0
+      });
+    });
+
+    const project = {
+      proyecto: document.getElementById('projectName').value || 'Sin nombre',
+      fecha: new Date().toISOString(),
+      parametros: {
+        hsp: parseFloat(document.getElementById('hsp').value),
+        dias_autonomia: parseFloat(document.getElementById('autonomy').value),
+        eficiencia_sistema: parseFloat(document.getElementById('systemLoss').value),
+        dod_bateria: parseFloat(document.getElementById('batteryType').value),
+        voltaje_sistema: parseFloat(document.getElementById('systemVoltage').value),
+        potencia_panel_w: parseFloat(document.getElementById('panelW').value),
+        capacidad_bateria_ah: parseFloat(document.getElementById('battAh').value),
+        factor_seguridad_inversor: parseFloat(document.getElementById('safetyFactor').value)
+      },
+      equipos: appliances,
+      resultados: {
+        consumo_diario_wh: parseFloat(document.getElementById('outConsumo').textContent.replace(/\./g,'').replace(',','.')) || 0,
+        potencia_fv_wp: parseFloat(document.getElementById('outPotenciaFV').textContent.replace(/\./g,'').replace(',','.')) || 0,
+        num_paneles: parseInt(document.getElementById('outPaneles').textContent) || 0,
+        num_baterias: parseInt(document.getElementById('outBaterias').textContent) || 0,
+        inversor_w: parseFloat(document.getElementById('outInversor').textContent.replace(/\./g,'').replace(',','.')) || 0,
+        controlador_a: parseFloat(document.getElementById('outControlador').textContent.replace(/\./g,'').replace(',','.')) || 0
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = (project.proyecto || 'proyecto').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    a.href = url;
+    a.download = `proyecto-${safeName}-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+})();
+</script>
+
+</body>
+</html>
