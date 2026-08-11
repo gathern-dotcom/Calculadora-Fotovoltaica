@@ -196,7 +196,6 @@
     padding: 2px 6px;
     line-height: 1;
   }
-  .remove-row:focus{ outline: 2px solid var(--amber); }
 
   button.add-row{
     background: transparent;
@@ -325,7 +324,6 @@
     cursor: pointer;
   }
   button.secondary:hover{ border-color: var(--muted); }
-  button:focus{ outline: 2px solid var(--amber); outline-offset: 2px; }
 
   .note{
     font-size: 11.5px;
@@ -386,7 +384,7 @@
   }
   .kit-specs li{
     display: grid;
-    grid-template-columns: 120px 1fr;
+    grid-template-columns: 130px 1fr;
     gap: 8px;
     padding: 4px 0;
     border-bottom: 1px solid var(--border);
@@ -399,7 +397,6 @@
     color: var(--muted);
   }
 
-  /* history */
   .history-item{
     display: grid;
     grid-template-columns: 1fr auto;
@@ -420,7 +417,7 @@
 <header class="top">
   <div class="brand">
     <h1 class="display">☀ Dimensionador FV</h1>
-    <span class="tag">SISTEMA AISLADO / OFF-GRID</span>
+    <span class="tag">SISTEMA AISLADO / OFF-GRID (HÍBRIDO)</span>
   </div>
   <div style="display:flex; gap:14px; flex-wrap:wrap;">
     <input class="project-name" id="projectName" type="text" placeholder="Nombre del proyecto…">
@@ -432,30 +429,37 @@
   <!-- LEFT: INPUTS -->
   <div>
     <section class="card">
-      <h2 class="section-title">Consumo eléctrico diario</h2>
-      <table class="appliances" id="applianceTable">
-        <thead>
-          <tr>
-            <th>Equipo</th>
-            <th style="width:60px">Pot. (W)</th>
-            <th style="width:56px">Cant.</th>
-            <th style="width:56px">Hrs/día</th>
-            <th style="width:70px">Wh/día</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="applianceBody"></tbody>
-      </table>
-      <button class="add-row" id="addRow" type="button">+ Agregar equipo</button>
+      <h2 class="section-title">Consumo eléctrico</h2>
+      
+      <!-- Entrada principal por consumo mensual de la factura -->
+      <div class="field-row" id="monthlyRow">
+        <label for="overrideValue">Consumo total mensual
+          <span class="hint">Según la factura de energía (kWh/mes)</span>
+        </label>
+        <input type="number" id="overrideValue" step="1" min="0" value="300">
+      </div>
 
       <div class="override-box">
         <div class="checkbox-row">
-          <input type="checkbox" id="overrideCheck">
-          <label for="overrideCheck">Ingresar consumo total directamente (ignora la tabla)</label>
+          <input type="checkbox" id="detailCheck">
+          <label for="detailCheck">Desglosar consumo por inventario de equipos (opcional)</label>
         </div>
-        <div class="field-row" id="overrideRow" style="display:none">
-          <label for="overrideValue">Consumo total (kWh/día)</label>
-          <input type="number" id="overrideValue" step="0.1" min="0" value="0">
+
+        <div id="tableContainer" style="display:none; margin-top:12px;">
+          <table class="appliances" id="applianceTable">
+            <thead>
+              <tr>
+                <th>Equipo</th>
+                <th style="width:60px">Pot. (W)</th>
+                <th style="width:56px">Cant.</th>
+                <th style="width:56px">Hrs/día</th>
+                <th style="width:70px">Wh/día</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="applianceBody"></tbody>
+          </table>
+          <button class="add-row" id="addRow" type="button">+ Agregar equipo</button>
         </div>
       </div>
     </section>
@@ -465,7 +469,7 @@
 
       <div class="field-row">
         <label for="panelW">Panel solar
-          <span class="hint">Según disponibilidad de inventario actual</span>
+          <span class="hint">Según catálogo Luxen Monofacial</span>
         </label>
         <select id="panelW">
           <option value="585">585 W</option>
@@ -475,28 +479,28 @@
 
       <div class="field-row">
         <label for="battKwh">Batería (por unidad)
-          <span class="hint">Capacidad LFP disponible en catálogo</span>
+          <span class="hint">Capacidad LFP FOC Energy</span>
         </label>
         <select id="battKwh">
-          <option value="2.9">2.9 kWh</option>
-          <option value="4">4 kWh</option>
-          <option value="11" selected>11 kWh</option>
-          <option value="16">16 kWh</option>
+          <option value="2.9">2.9 kWh (12V)</option>
+          <option value="4">4 kWh (12V)</option>
+          <option value="11" selected>11 kWh (48V)</option>
+          <option value="16">16 kWh (48V)</option>
         </select>
       </div>
 
       <div class="field-row">
         <label for="autonomy">Autonomía nocturna (horas)
-          <span class="hint">Horas sin sol que el banco de baterías debe cubrir</span>
+          <span class="hint">Respaldo estimado sin sol</span>
         </label>
         <input type="number" id="autonomy" step="1" min="1" max="48" value="14">
       </div>
 
       <div class="field-row">
         <label for="voltageInfo">Voltaje del sistema
-          <span class="hint">Se ajusta solo según el inversor requerido</span>
+          <span class="hint">Ajustado según el kit recomendado</span>
         </label>
-        <span class="mono" id="voltageInfo" style="font-size:13px; color: var(--text);">24 V</span>
+        <span class="mono" id="voltageInfo" style="font-size:13px; color: var(--text);">48 V</span>
       </div>
 
       <div class="override-box">
@@ -507,48 +511,37 @@
 
         <div id="advancedFields" style="display:none">
           <div class="field-row">
-            <label for="hsp">Horas de sol pico (HSP)
-              <span class="hint">kWh/m²/día de tu zona — consulta un mapa de irradiancia</span>
+            <label for="hsp">Horas de Sol Pico (HSP)
+              <span class="hint">Irradiancia promedio diaria (kWh/m²/día)</span>
             </label>
             <input type="number" id="hsp" step="0.1" min="1" value="3.6">
           </div>
 
           <div class="field-row">
-            <label for="systemLoss">Eficiencia global del sistema
-              <span class="hint">Pérdidas por inversor, cableado y temperatura</span>
+            <label for="systemLoss">Eficiencia del sistema
+              <span class="hint">Pérdidas en cableado e inversor</span>
             </label>
             <select id="systemLoss">
-              <option value="0.90">90% — instalación óptima</option>
-              <option value="0.85" selected>85% — instalación típica</option>
-              <option value="0.80">80% — instalación con pérdidas altas</option>
+              <option value="0.90">90% — Instalación óptima</option>
+              <option value="0.85" selected>85% — Típica</option>
+              <option value="0.80">80% — Pérdidas elevadas</option>
             </select>
           </div>
 
           <div class="field-row">
-            <label for="batteryType">Química de batería (DoD)
-              <span class="hint">Nuestro catálogo usa LFP — cambia solo si es un caso especial</span>
+            <label for="batteryType">Profundidad de descarga (DoD)
+              <span class="hint">Baterías Litio LFP recomendadas</span>
             </label>
             <select id="batteryType">
-              <option value="0.5">Plomo-ácido (DoD 50%)</option>
+              <option value="0.5">Plomo-Ácido (DoD 50%)</option>
               <option value="0.8">AGM/Gel (DoD 80%)</option>
               <option value="0.9" selected>Litio LFP (DoD 90%)</option>
             </select>
           </div>
 
           <div class="field-row">
-            <label for="voltageOverride">Forzar voltaje del sistema
-              <span class="hint">Anula el cálculo automático si lo necesitas</span>
-            </label>
-            <select id="voltageOverride">
-              <option value="auto" selected>Automático</option>
-              <option value="24">Forzar 24 V</option>
-              <option value="48">Forzar 48 V</option>
-            </select>
-          </div>
-
-          <div class="field-row">
             <label for="safetyFactor">Factor de seguridad del inversor
-              <span class="hint">Sobre la carga simultánea máxima estimada</span>
+              <span class="hint">Margen para picos simultáneos</span>
             </label>
             <input type="number" id="safetyFactor" step="0.05" min="1" value="1.25">
           </div>
@@ -564,9 +557,9 @@
 
       <div class="kpi-grid">
         <div class="kpi">
-          <div class="kpi-label">Consumo diario</div>
-          <div class="kpi-value"><span id="outConsumo">0</span><span class="unit">Wh/día</span></div>
-          <div class="kpi-sub" id="outConsumoKwh">0.00 kWh/día</div>
+          <div class="kpi-label">Consumo estimado</div>
+          <div class="kpi-value"><span id="outConsumoKwhMes">0</span><span class="unit">kWh/mes</span></div>
+          <div class="kpi-sub" id="outConsumoDia">0 Wh/día (0.00 kWh/día)</div>
         </div>
         <div class="kpi">
           <div class="kpi-label">Potencia FV requerida</div>
@@ -583,44 +576,36 @@
           <div class="kpi-value"><span id="outBaterias">0</span><span class="unit">unidades</span></div>
           <div class="kpi-sub" id="outBateriasSub">—</div>
         </div>
-        <div class="kpi">
-          <div class="kpi-label">Inversor mínimo</div>
-          <div class="kpi-value"><span id="outInversor">0</span><span class="unit">W</span></div>
-          <div class="kpi-sub" id="outInversorSub">Carga simultánea × factor de seguridad</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Controlador de carga</div>
-          <div class="kpi-value"><span id="outControlador">0</span><span class="unit">A</span></div>
-          <div class="kpi-sub">A tensión del sistema seleccionada</div>
+        <div class="kpi" style="grid-column: span 2;">
+          <div class="kpi-label">Inversor comercial del kit</div>
+          <div class="kpi-value"><span id="outInversor">0</span><span class="unit">kW</span></div>
+          <div class="kpi-sub" id="outInversorSub">Inversor Híbrido (Controlador MPPT Integrado)</div>
         </div>
       </div>
 
+      <!-- Esquema dinámico SVG restaurado -->
       <div class="schematic" id="schematicWrap">
         <svg id="schematicSvg" viewBox="0 0 640 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <!-- lines -->
           <line x1="95" y1="60" x2="200" y2="60" stroke="#3A4450" stroke-width="2" class="flow-dash"/>
           <line x1="255" y1="60" x2="360" y2="60" stroke="#3A4450" stroke-width="2" class="flow-dash"/>
           <line x1="415" y1="60" x2="520" y2="60" stroke="#3A4450" stroke-width="2" class="flow-dash"/>
-          <line x1="360" y1="90" x2="360" y2="140" stroke="#3A4450" stroke-width="2" class="flow-dash"/>
 
-          <!-- sun -->
+          <!-- Sol -->
           <circle cx="55" cy="60" r="26" fill="none" stroke="var(--amber)" stroke-width="2"/>
           <text x="55" y="105" text-anchor="middle" class="node-label">SOL</text>
-          <text x="55" y="120" text-anchor="middle" class="node-value" id="svgHsp">4.5 HSP</text>
+          <text x="55" y="120" text-anchor="middle" class="node-value" id="svgHsp">3.6 HSP</text>
 
-          <!-- panel -->
+          <!-- Panel -->
           <rect x="200" y="40" width="55" height="40" rx="4" fill="#232B32" stroke="var(--amber)" stroke-width="1.5"/>
           <text x="227" y="105" text-anchor="middle" class="node-label">PANELES</text>
           <text x="227" y="120" text-anchor="middle" class="node-value" id="svgPaneles">0</text>
 
-          <!-- battery -->
+          <!-- Inversor Híbrido + Batería -->
           <rect x="360" y="40" width="55" height="40" rx="4" fill="#232B32" stroke="var(--green)" stroke-width="1.5"/>
           <text x="387" y="105" text-anchor="middle" class="node-label">BATERÍAS</text>
           <text x="387" y="120" text-anchor="middle" class="node-value" id="svgBaterias">0</text>
 
-          <!-- inverter -->
-          <rect x="360" y="140" width="55" height="0" fill="none"/>
-          <!-- load -->
+          <!-- Carga -->
           <rect x="520" y="40" width="60" height="40" rx="4" fill="#232B32" stroke="#5B6572" stroke-width="1.5"/>
           <text x="550" y="105" text-anchor="middle" class="node-label">CARGA</text>
           <text x="550" y="120" text-anchor="middle" class="node-value" id="svgCarga">0 W</text>
@@ -628,8 +613,7 @@
       </div>
 
       <p class="note">
-        Estos cálculos usan fórmulas estándar de dimensionamiento para sistemas aislados y son un punto de partida técnico.
-        Ajusta los factores de seguridad según tu criterio de ingeniería, normativa local y las condiciones reales del sitio.
+        Los inversores sugeridos corresponden a modelos híbridos (cuentan con controlador MPPT integrado).
       </p>
     </section>
 
@@ -641,8 +625,8 @@
     <section class="card">
       <div class="actions">
         <button class="primary" id="saveCloudBtn" type="button">Guardar proyecto</button>
-        <button class="secondary" id="downloadBtn" type="button">Exportar copia local (JSON)</button>
-        <button class="secondary" id="resetBtn" type="button">Restablecer valores</button>
+        <button class="secondary" id="downloadBtn" type="button">Exportar JSON</button>
+        <button class="secondary" id="resetBtn" type="button">Restablecer</button>
       </div>
       <p class="note" id="saveStatus"></p>
     </section>
@@ -657,53 +641,62 @@
   </div>
 </main>
 
-<p class="footer-note">Dimensionador FV — cálculo de referencia para sistemas fotovoltaicos aislados</p>
+<p class="footer-note">Dimensionador FV — Catálogo de Kits Aislados FOC Energy / Sosen / Luxen</p>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
-  // Catálogo de kits — ajusta aquí si cambian specs, se agregan kits o hay precios
+  // Matriz corregida acorde exacto a las imágenes del catálogo comercial (K1 a K10)
   const KITS = [
-    { id:'C1', nombre:'KIT Hogar Mínimo', paneles:4, panelW:625,
-      inversor:'FOC Energy 3KW, 24V, 120/240V', inversorW:3000,
-      bateriaModelo:'LFP FOC Energy 12V, 2.9 kWh', bateriaCant:2, bateriaKwhUnit:2.9,
+    { id:'K1', nombre:'KIT Hogar Mínimo', paneles:4, panelW:625,
+      inversor:'Inversor FOC Energy 3KW, 24V, 120/240V', inversorW:3000,
+      bateriaModelo:'Batería LFP FOC Energy 12V, 2.9 KWh', bateriaCant:2, bateriaKwhUnit:2.9,
       proteccionDC:'Combiner Box DC Suntree 2 in 1 out', soporte:2, cable:35 },
-    { id:'C2', nombre:'KIT Hogar Mínimo +', paneles:6, panelW:585,
-      inversor:'FOC Energy 3KW, 24V, 120/240V', inversorW:3000,
-      bateriaModelo:'LFP FOC Energy 12V, 4 kWh', bateriaCant:2, bateriaKwhUnit:4,
+
+    { id:'K2', nombre:'KIT Hogar Mínimo +', paneles:6, panelW:585,
+      inversor:'Inversor FOC Energy 3KW, 24V, 120/240V', inversorW:3000,
+      bateriaModelo:'Batería LFP FOC Energy 12V, 4 KWh', bateriaCant:2, bateriaKwhUnit:4,
       proteccionDC:'Combiner Box DC Suntree 3 in 1 out', soporte:3, cable:70 },
-    { id:'C3', nombre:'KIT Hogar Básico', paneles:6, panelW:625,
-      inversor:'FOC Energy 5KW, 48V, 120/240V', inversorW:5000,
-      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:1, bateriaKwhUnit:11,
+
+    { id:'K3', nombre:'KIT Hogar Básico', paneles:6, panelW:625,
+      inversor:'Inversor FOC Energy 5KW, 48V, 120/240V', inversorW:5000,
+      bateriaModelo:'Batería LFP FOC Energy 48V, 11 KWh', bateriaCant:1, bateriaKwhUnit:11,
       proteccionDC:'Combiner Box DC Suntree 3 in 1 out', soporte:3, cable:70 },
-    { id:'C4', nombre:'KIT Hogar Básico +', paneles:8, panelW:625,
-      inversor:'FOC Energy 5KW, 48V, 120/240V', inversorW:5000,
-      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:1, bateriaKwhUnit:11,
+
+    { id:'K4', nombre:'KIT Hogar Básico +', paneles:8, panelW:625,
+      inversor:'Inversor FOC Energy 5KW, 48V, 120/240V', inversorW:5000,
+      bateriaModelo:'Batería LFP FOC Energy 48V, 11 KWh', bateriaCant:1, bateriaKwhUnit:11,
       proteccionDC:'Combiner Box DC Suntree 4 in 1 out', soporte:4, cable:100 },
-    { id:'C32', nombre:'KIT Hogar Básico2', paneles:9, panelW:625,
-      inversor:'FOC Energy 6.4KW, 48V, 120/240V', inversorW:6400,
-      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:1, bateriaKwhUnit:11,
+
+    { id:'K5', nombre:'KIT Hogar Básico2', paneles:9, panelW:625,
+      inversor:'Inversor FOC Energy 6.4KW, 48V, 120/240V', inversorW:6400,
+      bateriaModelo:'Batería LFP FOC Energy 48V, 11 KWh', bateriaCant:1, bateriaKwhUnit:11,
       proteccionDC:'Combiner Box DC Suntree 3 in 1 out', soporte:5, cable:74 },
-    { id:'C42', nombre:'KIT Hogar Max', paneles:12, panelW:585,
-      inversor:'FOC Energy 6.4KW, 48V, 120/240V', inversorW:6400,
-      bateriaModelo:'LFP FOC Energy 48V, 16 kWh', bateriaCant:1, bateriaKwhUnit:16,
+
+    { id:'K6', nombre:'KIT Hogar Max', paneles:12, panelW:585,
+      inversor:'Inversor FOC Energy 6.4KW, 48V, 120/240V', inversorW:6400,
+      bateriaModelo:'Batería LFP FOC Energy 48V, 16 KWh', bateriaCant:1, bateriaKwhUnit:16,
       proteccionDC:'Combiner Box DC Suntree 4 in 1 out', soporte:6, cable:110 },
-    { id:'C5', nombre:'KIT Hogar Full', paneles:11, panelW:625,
+
+    { id:'K7', nombre:'KIT Hogar Full', paneles:14, panelW:625,
       inversor:'Hybrid Inverter Sosen 8KW, 48V, 120/240V', inversorW:8000,
-      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:2, bateriaKwhUnit:11,
+      bateriaModelo:'Batería LFP FOC Energy 48V, 11 KWh', bateriaCant:2, bateriaKwhUnit:11,
       proteccionDC:'Combiner Box DC Suntree 2 in 2 out', soporte:7, cable:70 },
-    { id:'C6', nombre:'KIT Hogar Full 2', paneles:17, panelW:625,
+
+    { id:'K8', nombre:'KIT Hogar Full 2', paneles:17, panelW:625,
       inversor:'Hybrid Inverter Sosen 10KW, 48V, 120/240V', inversorW:10000,
-      bateriaModelo:'LFP FOC Energy 48V, 16 kWh', bateriaCant:2, bateriaKwhUnit:16,
+      bateriaModelo:'Batería LFP FOC Energy 48V, 11 KWh', bateriaCant:2, bateriaKwhUnit:11,
       proteccionDC:'Combiner Box DC Suntree 2 in 2 out', soporte:9, cable:74 },
-    { id:'C7', nombre:'KIT Hogar Full +', paneles:21, panelW:625,
+
+    { id:'K9', nombre:'KIT Hogar Full +', paneles:21, panelW:625,
       inversor:'Hybrid Inverter Sosen 12KW, 48V, 120/240V', inversorW:12000,
-      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:2, bateriaKwhUnit:11,
+      bateriaModelo:'Batería LFP FOC Energy 48V, 16 KWh', bateriaCant:2, bateriaKwhUnit:16,
       proteccionDC:'Combiner Box DC Suntree 3 in 3 out', soporte:11, cable:98 },
-    { id:'C8', nombre:'KIT Hogar Full + VE', paneles:14, panelW:625,
+
+    { id:'K10', nombre:'KIT Hogar Full + VE', paneles:30, panelW:625,
       inversor:'Hybrid Inverter Sosen 15KW, 48V, 120/240V', inversorW:15000,
-      bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:2, bateriaKwhUnit:11,
-      proteccionDC:'Combiner Box DC Suntree 3 in 3 out', soporte:7, cable:98 }
+      bateriaModelo:'Batería LFP FOC Energy 48V, 16 KWh', bateriaCant:3, bateriaKwhUnit:16,
+      proteccionDC:'Combiner Box DC Suntree 3 in 3 out', soporte:15, cable:98 }
   ].map(k => ({
     ...k,
     totalWp: k.paneles * k.panelW,
@@ -720,7 +713,6 @@
     if(candidatos.length > 0){
       return { kit: candidatos[0], cumple: true };
     }
-    // Ninguno cumple los tres a la vez: se sugiere el más grande como referencia
     const masGrande = [...KITS].sort((a,b) => b.totalWp - a.totalWp)[0];
     return { kit: masGrande, cumple: false };
   }
@@ -731,7 +723,7 @@
     const cardClass = cumple ? 'kit-card' : 'kit-card warn';
     const statusText = cumple
       ? '✓ Cubre el requerimiento calculado'
-      : '⚠ Ningún kit estándar cubre esto — requiere cotización personalizada o combinar kits';
+      : '⚠ Excede catálogo estándar — requiere solución a medida';
 
     wrap.innerHTML = `
       <div class="${cardClass}">
@@ -743,15 +735,15 @@
           <span class="kit-status">${statusText}</span>
         </div>
         <ul class="kit-specs">
-          <li><span class="k">Paneles solares</span><span class="v">${kit.paneles} un · ${fmt(kit.panelW)} W · ${fmt(kit.totalWp)} Wp total</span></li>
-          <li><span class="k">Inversor</span><span class="v">${kit.inversor}</span></li>
-          <li><span class="k">Baterías</span><span class="v">${kit.bateriaCant} un · ${kit.bateriaModelo} · ${fmt(kit.totalBateriaKwh,1)} kWh total</span></li>
+          <li><span class="k">Paneles solares</span><span class="v">${kit.paneles} un · ${fmt(kit.panelW)}W · ${fmt(kit.totalWp)} Wp total</span></li>
+          <li><span class="k">Inversor Híbrido</span><span class="v">${kit.inversor}</span></li>
+          <li><span class="k">Baterías Litio</span><span class="v">${kit.bateriaCant} un · ${kit.bateriaModelo} · ${fmt(kit.totalBateriaKwh,1)} kWh total</span></li>
           <li><span class="k">Protección DC</span><span class="v">${kit.proteccionDC}</span></li>
-          <li><span class="k">Soporte techo</span><span class="v">${kit.soporte} un (2 paneles c/u)</span></li>
+          <li><span class="k">Soporte techo</span><span class="v">${kit.soporte} un (soporte de 2 paneles)</span></li>
           <li><span class="k">Cable fotovoltaico</span><span class="v">${kit.cable} m</span></li>
         </ul>
         <div class="kit-alt">
-          Requerido: ${fmt(neededWp)} Wp · ${fmt(neededBankKwh,1)} kWh banco · ${fmt(neededInverterW)} W inversor
+          Requerimiento mín.: ${fmt(neededWp)} Wp · ${fmt(neededBankKwh,1)} kWh banco · ${fmt(neededInverterW/1000, 1)} kW inversor
         </div>
       </div>
     `;
@@ -774,7 +766,7 @@
       <td><input type="number" class="f-qty" min="1" step="1" value="${item.qty}"></td>
       <td><input type="number" class="f-hours" min="0" step="0.5" max="24" value="${item.hours}"></td>
       <td class="col-sub f-sub">0</td>
-      <td><button class="remove-row" type="button" aria-label="Eliminar equipo">×</button></td>
+      <td><button class="remove-row" type="button">×</button></td>
     `;
     tbody.appendChild(tr);
     tr.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalc));
@@ -787,13 +779,16 @@
     rowTemplate({ name: '', power: 0, qty: 1, hours: 0 });
   });
 
-  const overrideCheck = document.getElementById('overrideCheck');
-  const overrideRow = document.getElementById('overrideRow');
-  overrideCheck.addEventListener('change', () => {
-    overrideRow.style.display = overrideCheck.checked ? 'grid' : 'none';
+  const detailCheck = document.getElementById('detailCheck');
+  const tableContainer = document.getElementById('tableContainer');
+  const overrideValue = document.getElementById('overrideValue');
+
+  detailCheck.addEventListener('change', () => {
+    tableContainer.style.display = detailCheck.checked ? 'block' : 'none';
     recalc();
   });
-  document.getElementById('overrideValue').addEventListener('input', recalc);
+
+  overrideValue.addEventListener('input', recalc);
 
   const advancedCheck = document.getElementById('advancedCheck');
   const advancedFields = document.getElementById('advancedFields');
@@ -802,7 +797,7 @@
     recalc();
   });
 
-  ['hsp','autonomy','systemLoss','batteryType','voltageOverride','panelW','battKwh','safetyFactor']
+  ['hsp','autonomy','systemLoss','batteryType','panelW','battKwh','safetyFactor']
     .forEach(id => {
       const el = document.getElementById(id);
       el.addEventListener('input', recalc);
@@ -816,20 +811,24 @@
   function recalc(){
     let dailyWh = 0;
     let peakLoadW = 0;
+    let monthlyKwh = 0;
 
-    tbody.querySelectorAll('tr').forEach(tr => {
-      const power = parseFloat(tr.querySelector('.f-power').value) || 0;
-      const qty = parseFloat(tr.querySelector('.f-qty').value) || 0;
-      const hours = parseFloat(tr.querySelector('.f-hours').value) || 0;
-      const sub = power * qty * hours;
-      tr.querySelector('.f-sub').textContent = fmt(sub);
-      dailyWh += sub;
-      peakLoadW += power * qty;
-    });
-
-    if(overrideCheck.checked){
-      const kwh = parseFloat(document.getElementById('overrideValue').value) || 0;
-      dailyWh = kwh * 1000;
+    if(!detailCheck.checked){
+      monthlyKwh = parseFloat(overrideValue.value) || 0;
+      dailyWh = (monthlyKwh * 1000) / 30;
+      peakLoadW = dailyWh / 4; 
+    } else {
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const power = parseFloat(tr.querySelector('.f-power').value) || 0;
+        const qty = parseFloat(tr.querySelector('.f-qty').value) || 0;
+        const hours = parseFloat(tr.querySelector('.f-hours').value) || 0;
+        const sub = power * qty * hours;
+        tr.querySelector('.f-sub').textContent = fmt(sub);
+        dailyWh += sub;
+        peakLoadW += power * qty;
+      });
+      monthlyKwh = (dailyWh * 30) / 1000;
+      overrideValue.value = monthlyKwh.toFixed(0);
     }
 
     const hsp = parseFloat(document.getElementById('hsp').value) || 3.6;
@@ -849,42 +848,34 @@
     const bankKwh = bankWh / 1000;
     const numBatteries = battKwh > 0 ? Math.ceil(bankKwh / battKwh) : 0;
 
-    const inverterW = peakLoadW * safety;
+    const rawInverterW = peakLoadW * safety;
 
-    // Voltaje: automático según el inversor requerido, o forzado en modo avanzado
-    const voltageOverride = document.getElementById('voltageOverride').value;
-    let voltage;
-    if(voltageOverride === 'auto'){
-      voltage = inverterW <= 4000 ? 24 : 48;
-    } else {
-      voltage = parseFloat(voltageOverride);
-    }
-    document.getElementById('voltageInfo').textContent = voltage + ' V';
+    // Recomendación basada en catálogo exacto
+    const kitResult = recommendKit(fvPowerNeeded, bankKwh, rawInverterW);
+    const commercialInverterW = kitResult.kit.inversorW;
+    const voltage = kitResult.kit.inversor.includes('24V') ? '24 V' : '48 V';
+    document.getElementById('voltageInfo').textContent = voltage;
 
-    const controllerA = voltage > 0 ? (fvPowerNeeded / voltage) * 1.25 : 0;
-
-    document.getElementById('outConsumo').textContent = fmt(dailyWh);
-    document.getElementById('outConsumoKwh').textContent = fmt(dailyWh/1000, 2) + ' kWh/día';
+    document.getElementById('outConsumoKwhMes').textContent = fmt(monthlyKwh, 1);
+    document.getElementById('outConsumoDia').textContent = `${fmt(dailyWh)} Wh/día (${fmt(dailyWh/1000, 2)} kWh/día)`;
 
     document.getElementById('outPotenciaFV').textContent = fmt(fvPowerNeeded);
-    document.getElementById('outFVsub').textContent = `Con ${hsp} HSP y ${(eff*100).toFixed(0)}% de eficiencia`;
+    document.getElementById('outFVsub').textContent = `Con ${hsp} HSP y ${(eff*100).toFixed(0)}% eficiencia`;
 
     document.getElementById('outPaneles').textContent = fmt(numPanels);
     document.getElementById('outPanelesSub').textContent = `De ${fmt(panelW)} Wp cada uno`;
 
     document.getElementById('outBaterias').textContent = fmt(numBatteries);
-    document.getElementById('outBateriasSub').textContent = `De ${fmt(battKwh,1)} kWh — banco ${fmt(bankKwh,1)} kWh`;
+    document.getElementById('outBateriasSub').textContent = `De ${fmt(battKwh,1)} kWh — Banco ${fmt(bankKwh,1)} kWh`;
 
-    document.getElementById('outInversor').textContent = fmt(inverterW);
-    document.getElementById('outControlador').textContent = fmt(controllerA, 1);
+    document.getElementById('outInversor').textContent = (commercialInverterW / 1000).toFixed(1);
 
     document.getElementById('svgHsp').textContent = hsp + ' HSP';
     document.getElementById('svgPaneles').textContent = numPanels + ' pan.';
     document.getElementById('svgBaterias').textContent = numBatteries + ' bat.';
     document.getElementById('svgCarga').textContent = fmt(peakLoadW) + ' W';
 
-    const kitResult = recommendKit(fvPowerNeeded, bankKwh, inverterW);
-    renderKitCard(kitResult, fvPowerNeeded, bankKwh, inverterW);
+    renderKitCard(kitResult, fvPowerNeeded, bankKwh, commercialInverterW);
     window.__currentKitResult = kitResult;
     window.__currentVoltage = voltage;
   }
@@ -894,16 +885,15 @@
   document.getElementById('resetBtn').addEventListener('click', () => {
     tbody.innerHTML = '';
     defaultAppliances.forEach(rowTemplate);
-    overrideCheck.checked = false;
-    overrideRow.style.display = 'none';
-    document.getElementById('overrideValue').value = 0;
+    detailCheck.checked = false;
+    tableContainer.style.display = 'none';
+    overrideValue.value = 300;
     advancedCheck.checked = false;
     advancedFields.style.display = 'none';
     document.getElementById('hsp').value = 3.6;
     document.getElementById('autonomy').value = 14;
     document.getElementById('systemLoss').value = '0.85';
     document.getElementById('batteryType').value = '0.9';
-    document.getElementById('voltageOverride').value = 'auto';
     document.getElementById('panelW').value = '625';
     document.getElementById('battKwh').value = '11';
     document.getElementById('safetyFactor').value = 1.25;
@@ -942,12 +932,11 @@
       },
       equipos: appliances,
       resultados: {
-        consumo_diario_wh: parseFloat(document.getElementById('outConsumo').textContent.replace(/\./g,'').replace(',','.')) || 0,
+        consumo_mensual_kwh: parseFloat(document.getElementById('outConsumoKwhMes').textContent) || 0,
         potencia_fv_wp: parseFloat(document.getElementById('outPotenciaFV').textContent.replace(/\./g,'').replace(',','.')) || 0,
         num_paneles: parseInt(document.getElementById('outPaneles').textContent) || 0,
         num_baterias: parseInt(document.getElementById('outBaterias').textContent) || 0,
-        inversor_w: parseFloat(document.getElementById('outInversor').textContent.replace(/\./g,'').replace(',','.')) || 0,
-        controlador_a: parseFloat(document.getElementById('outControlador').textContent.replace(/\./g,'').replace(',','.')) || 0
+        inversor_kw: parseFloat(document.getElementById('outInversor').textContent) || 0
       },
       kit_recomendado: kitLabel,
       kit_cumple: kr ? kr.cumple : null
@@ -968,7 +957,7 @@
     URL.revokeObjectURL(url);
   });
 
-  // ---- Supabase ----
+  // ---- Supabase Integration ----
   const SUPABASE_URL = 'https://brcnxiqetcuhnfvlcwgp.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyY254aXFldGN1aG5mdmxjd2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0NzE0OTIsImV4cCI6MjEwMjA0NzQ5Mn0.8gLSBhfwXcG_A7JMoRo0ZPHNFvi6YcQmzQljMYM-BIg';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -994,7 +983,7 @@
       saveStatus.textContent = 'Error al guardar: ' + error.message;
       saveStatus.style.color = 'var(--danger)';
     } else {
-      saveStatus.textContent = '✓ Proyecto guardado en la base de datos.';
+      saveStatus.textContent = '✓ Proyecto guardado exitosamente.';
       saveStatus.style.color = 'var(--green)';
       loadHistory();
     }
@@ -1015,15 +1004,15 @@
       return;
     }
     if(!data || data.length === 0){
-      historyList.textContent = 'Todavía no hay proyectos guardados.';
+      historyList.textContent = 'Sin proyectos guardados.';
       return;
     }
 
     historyList.innerHTML = '';
     data.forEach(row => {
       const fecha = row.creado_en ? new Date(row.creado_en).toLocaleString('es-CO') : '';
-      const consumo = row.resultados && row.resultados.consumo_diario_wh
-        ? fmt(row.resultados.consumo_diario_wh/1000, 2) + ' kWh/día' : '';
+      const consumo = row.resultados && row.resultados.consumo_mensual_kwh
+        ? fmt(row.resultados.consumo_mensual_kwh, 1) + ' kWh/mes' : '';
       const div = document.createElement('div');
       div.className = 'history-item';
       div.innerHTML = `
