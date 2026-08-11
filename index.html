@@ -398,6 +398,21 @@
     font-size: 11.5px;
     color: var(--muted);
   }
+
+  /* history */
+  .history-item{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+  }
+  .history-item .h-main{ display:flex; flex-direction: column; gap: 2px; }
+  .history-item .h-name{ font-weight: 600; }
+  .history-item .h-meta{ color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+  .history-item .h-kit{ font-size: 11.5px; color: var(--amber); font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -407,7 +422,10 @@
     <h1 class="display">☀ Dimensionador FV</h1>
     <span class="tag">SISTEMA AISLADO / OFF-GRID</span>
   </div>
-  <input class="project-name" id="projectName" type="text" placeholder="Nombre del proyecto / cliente…">
+  <div style="display:flex; gap:14px; flex-wrap:wrap;">
+    <input class="project-name" id="projectName" type="text" placeholder="Nombre del proyecto…">
+    <input class="project-name" id="clientName" type="text" placeholder="Cliente…">
+  </div>
 </header>
 
 <main>
@@ -591,15 +609,26 @@
 
     <section class="card">
       <div class="actions">
-        <button class="primary" id="downloadBtn" type="button">Descargar proyecto (JSON)</button>
+        <button class="primary" id="saveCloudBtn" type="button">Guardar proyecto</button>
+        <button class="secondary" id="downloadBtn" type="button">Exportar copia local (JSON)</button>
         <button class="secondary" id="resetBtn" type="button">Restablecer valores</button>
       </div>
+      <p class="note" id="saveStatus"></p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Historial de proyectos guardados</h2>
+      <div class="actions" style="margin-top:0; margin-bottom:14px;">
+        <button class="secondary" id="refreshHistoryBtn" type="button">Actualizar lista</button>
+      </div>
+      <div id="historyList" class="note">Cargando…</div>
     </section>
   </div>
 </main>
 
 <p class="footer-note">Dimensionador FV — cálculo de referencia para sistemas fotovoltaicos aislados</p>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   // Catálogo de kits — ajusta aquí si cambian specs, se agregan kits o hay precios
@@ -806,6 +835,7 @@
     const bankKwh = bankWh / 1000;
     const kitResult = recommendKit(fvPowerNeeded, bankKwh, inverterW);
     renderKitCard(kitResult, fvPowerNeeded, bankKwh, inverterW);
+    window.__currentKitResult = kitResult;
   }
 
   recalc();
@@ -828,7 +858,7 @@
     recalc();
   });
 
-  document.getElementById('downloadBtn').addEventListener('click', () => {
+  function buildProjectObject(){
     const appliances = [];
     tbody.querySelectorAll('tr').forEach(tr => {
       appliances.push({
@@ -839,8 +869,12 @@
       });
     });
 
-    const project = {
+    const kr = window.__currentKitResult;
+    const kitLabel = kr ? `${kr.kit.id} — ${kr.kit.nombre}` : null;
+
+    return {
       proyecto: document.getElementById('projectName').value || 'Sin nombre',
+      cliente: document.getElementById('clientName').value || null,
       fecha: new Date().toISOString(),
       parametros: {
         hsp: parseFloat(document.getElementById('hsp').value),
@@ -860,9 +894,14 @@
         num_baterias: parseInt(document.getElementById('outBaterias').textContent) || 0,
         inversor_w: parseFloat(document.getElementById('outInversor').textContent.replace(/\./g,'').replace(',','.')) || 0,
         controlador_a: parseFloat(document.getElementById('outControlador').textContent.replace(/\./g,'').replace(',','.')) || 0
-      }
+      },
+      kit_recomendado: kitLabel,
+      kit_cumple: kr ? kr.cumple : null
     };
+  }
 
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    const project = buildProjectObject();
     const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -874,6 +913,78 @@
     a.remove();
     URL.revokeObjectURL(url);
   });
+
+  // ---- Supabase ----
+  const SUPABASE_URL = 'https://brcnxiqetcuhnfvlcwgp.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyY254aXFldGN1aG5mdmxjd2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0NzE0OTIsImV4cCI6MjEwMjA0NzQ5Mn0.8gLSBhfwXcG_A7JMoRo0ZPHNFvi6YcQmzQljMYM-BIg';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const saveStatus = document.getElementById('saveStatus');
+
+  document.getElementById('saveCloudBtn').addEventListener('click', async () => {
+    const project = buildProjectObject();
+    saveStatus.textContent = 'Guardando…';
+    saveStatus.style.color = 'var(--muted)';
+
+    const { error } = await supabaseClient.from('proyectos').insert({
+      nombre_proyecto: project.proyecto,
+      cliente: project.cliente,
+      parametros: project.parametros,
+      equipos: project.equipos,
+      resultados: project.resultados,
+      kit_recomendado: project.kit_recomendado,
+      kit_cumple: project.kit_cumple
+    });
+
+    if(error){
+      saveStatus.textContent = 'Error al guardar: ' + error.message;
+      saveStatus.style.color = 'var(--danger)';
+    } else {
+      saveStatus.textContent = '✓ Proyecto guardado en la base de datos.';
+      saveStatus.style.color = 'var(--green)';
+      loadHistory();
+    }
+  });
+
+  async function loadHistory(){
+    const historyList = document.getElementById('historyList');
+    historyList.textContent = 'Cargando…';
+
+    const { data, error } = await supabaseClient
+      .from('proyectos')
+      .select('*')
+      .order('creado_en', { ascending: false })
+      .limit(20);
+
+    if(error){
+      historyList.textContent = 'No se pudo cargar el historial: ' + error.message;
+      return;
+    }
+    if(!data || data.length === 0){
+      historyList.textContent = 'Todavía no hay proyectos guardados.';
+      return;
+    }
+
+    historyList.innerHTML = '';
+    data.forEach(row => {
+      const fecha = row.creado_en ? new Date(row.creado_en).toLocaleString('es-CO') : '';
+      const consumo = row.resultados && row.resultados.consumo_diario_wh
+        ? fmt(row.resultados.consumo_diario_wh/1000, 2) + ' kWh/día' : '';
+      const div = document.createElement('div');
+      div.className = 'history-item';
+      div.innerHTML = `
+        <div class="h-main">
+          <span class="h-name">${row.nombre_proyecto || 'Sin nombre'} ${row.cliente ? '· ' + row.cliente : ''}</span>
+          <span class="h-meta">${fecha} ${consumo ? '· ' + consumo : ''}</span>
+        </div>
+        <span class="h-kit">${row.kit_recomendado || '—'}</span>
+      `;
+      historyList.appendChild(div);
+    });
+  }
+
+  document.getElementById('refreshHistoryBtn').addEventListener('click', loadHistory);
+  loadHistory();
 })();
 </script>
 
