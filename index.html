@@ -154,6 +154,7 @@
     border-collapse: collapse;
     font-size: 12.5px;
     margin-bottom: 10px;
+    table-layout: fixed;
   }
   table.appliances th{
     text-align: left;
@@ -162,11 +163,12 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 6px 6px;
+    padding: 6px 4px;
     border-bottom: 1px solid var(--border);
+    overflow: hidden;
   }
   table.appliances td{
-    padding: 5px 6px;
+    padding: 5px 4px;
     border-bottom: 1px solid var(--border);
   }
   table.appliances input[type=text]{
@@ -174,20 +176,30 @@
     border: 1px solid var(--border);
     color: var(--text);
     border-radius: 5px;
-    padding: 6px 7px;
-    font-size: 12.5px;
+    padding: 6px 6px;
+    font-size: 12px;
     width: 100%;
+    min-width: 0;
     font-family: 'Inter', sans-serif;
   }
   table.appliances input[type=number]{
-    width: 62px;
-    padding: 6px 6px;
+    width: 100%;
+    min-width: 0;
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+  table.appliances select.f-hp{
+    width: 100%;
+    min-width: 0;
+    padding: 6px 3px;
+    font-size: 11px;
   }
   table.appliances .col-sub{
     font-family: 'IBM Plex Mono', monospace;
     color: var(--muted);
     text-align: right;
     white-space: nowrap;
+    overflow: hidden;
   }
   .remove-row{
     background: none;
@@ -195,7 +207,7 @@
     color: var(--danger);
     cursor: pointer;
     font-size: 15px;
-    padding: 2px 6px;
+    padding: 2px 4px;
     line-height: 1;
   }
   .remove-row:focus{ outline: 2px solid var(--amber); }
@@ -259,12 +271,16 @@
   }
   .kpi .kpi-value{
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 26px;
+    font-size: 24px;
+    line-height: 1.15;
+    min-width: 0;
+    overflow-wrap: anywhere;
     font-weight: 600;
     color: var(--text);
   }
   .kpi .kpi-value .unit{
-    font-size: 13px;
+    display: inline-block;
+    font-size: 12px;
     font-weight: 400;
     color: var(--muted);
     margin-left: 4px;
@@ -297,6 +313,31 @@
     font-size: 13px;
     font-weight: 600;
     fill: var(--text);
+  }
+
+  /* bombillo de carga: brillo pulsante */
+  #bulbGlow{
+    animation: bulbGlowPulse 2.2s ease-in-out infinite;
+    transform-origin: 550px 55px;
+  }
+  #bulbBody{
+    animation: bulbBodyPulse 2.2s ease-in-out infinite;
+    transform-origin: 550px 55px;
+  }
+  #bulbFilament{
+    animation: bulbFilamentPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes bulbGlowPulse{
+    0%, 100% { stroke: #5B6572; r: 16; opacity: 0.5; }
+    50% { stroke: var(--amber); r: 19; opacity: 1; }
+  }
+  @keyframes bulbBodyPulse{
+    0%, 100% { fill: #2A323A; stroke: #8A94A0; }
+    50% { fill: #4a3a12; stroke: var(--amber); }
+  }
+  @keyframes bulbFilamentPulse{
+    0%, 100% { stroke: #8A94A0; opacity: 0.6; }
+    50% { stroke: var(--amber); opacity: 1; }
   }
 
   .actions{
@@ -442,11 +483,12 @@
         <thead>
           <tr>
             <th>Equipo</th>
-            <th style="width:60px">Pot. (W)</th>
-            <th style="width:56px">Cant.</th>
-            <th style="width:56px">Hrs/día</th>
-            <th style="width:70px">Wh/día</th>
-            <th></th>
+            <th style="width:68px">Motor (HP)</th>
+            <th style="width:52px">Pot. (W)</th>
+            <th style="width:44px">Cant.</th>
+            <th style="width:52px">Hrs/día</th>
+            <th style="width:62px">Wh/día</th>
+            <th style="width:22px"></th>
           </tr>
         </thead>
         <tbody id="applianceBody"></tbody>
@@ -561,6 +603,35 @@
           </div>
         </div>
       </div>
+
+      <div class="override-box manual-selection-box">
+        <div class="checkbox-row">
+          <input type="checkbox" id="manualSelectionCheck">
+          <label for="manualSelectionCheck">Activar selección manual del sistema optimizado</label>
+        </div>
+        <div id="manualSelectionFields" style="display:none">
+          <div class="field-row">
+            <label for="manualInverterW">Inversor optimizado
+              <span class="hint">Puedes forzar un modelo mayor; si se requieren varios, se repetirán del mismo modelo.</span>
+            </label>
+            <select id="manualInverterW">
+              <option value="3000">FOC Energy 3 kW</option>
+              <option value="5000">FOC Energy 5 kW</option>
+              <option value="6400">FOC Energy 6,4 kW</option>
+              <option value="8000">Sosen 8 kW</option>
+              <option value="10000">Sosen 10 kW</option>
+              <option value="12000">Sosen 12 kW</option>
+              <option value="15000">Sosen 15 kW</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label for="manualBatteryQty">Cantidad de baterías
+              <span class="hint">Se aplica a la batería seleccionada arriba. Si queda en 0, se calcula automáticamente.</span>
+            </label>
+            <input type="number" id="manualBatteryQty" min="0" step="1" value="0">
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -606,24 +677,48 @@
           <line x1="360" y1="90" x2="360" y2="140" stroke="#3A4450" stroke-width="2" class="flow-dash"/>
 
           <!-- sun -->
-          <circle cx="55" cy="60" r="26" fill="none" stroke="var(--amber)" stroke-width="2"/>
-          <text x="55" y="105" text-anchor="middle" class="node-label">SOL</text>
-          <text x="55" y="120" text-anchor="middle" class="node-value" id="svgHsp">4.5 HSP</text>
+          <image x="10" y="10" width="90" height="90" preserveAspectRatio="xMidYMid meet" href="data:image/webp;base64,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"/>
+          <text x="55" y="112" text-anchor="middle" class="node-label">SOL</text>
+          <text x="55" y="127" text-anchor="middle" class="node-value" id="svgHsp">4.5 HSP</text>
 
-          <!-- panel -->
-          <rect x="200" y="40" width="55" height="40" rx="4" fill="#232B32" stroke="var(--amber)" stroke-width="1.5"/>
+          <!-- panel: icono vectorial (marco + celdas en grilla) -->
+          <g>
+            <rect x="199" y="36" width="58" height="46" rx="3" fill="#1A2027" stroke="var(--amber)" stroke-width="1.5"/>
+            <g stroke="#3A4450" stroke-width="1">
+              <line x1="218.3" y1="36" x2="218.3" y2="82"/>
+              <line x1="237.6" y1="36" x2="237.6" y2="82"/>
+              <line x1="199" y1="50.6" x2="257" y2="50.6"/>
+              <line x1="199" y1="65.3" x2="257" y2="65.3"/>
+            </g>
+            <rect x="199" y="36" width="58" height="46" rx="3" fill="none" stroke="var(--amber)" stroke-width="1.5"/>
+          </g>
           <text x="227" y="105" text-anchor="middle" class="node-label">PANELES</text>
           <text x="227" y="120" text-anchor="middle" class="node-value" id="svgPaneles">0</text>
 
-          <!-- battery -->
-          <rect x="360" y="40" width="55" height="40" rx="4" fill="#232B32" stroke="var(--green)" stroke-width="1.5"/>
+          <!-- battery: icono vectorial (cuerpo + terminal + nivel de carga) -->
+          <g>
+            <rect x="367" y="42" width="6" height="8" fill="var(--green)"/>
+            <rect x="360" y="50" width="55" height="32" rx="3" fill="#1A2027" stroke="var(--green)" stroke-width="1.5"/>
+            <rect x="364" y="54" width="47" height="24" rx="1" fill="none" stroke="#3A4450" stroke-width="1"/>
+            <rect x="366" y="56" width="14" height="20" fill="var(--green)" opacity="0.85"/>
+            <rect x="382" y="56" width="14" height="20" fill="var(--green)" opacity="0.55"/>
+            <rect x="398" y="56" width="11" height="20" fill="var(--green)" opacity="0.3"/>
+          </g>
           <text x="387" y="105" text-anchor="middle" class="node-label">BATERÍAS</text>
           <text x="387" y="120" text-anchor="middle" class="node-value" id="svgBaterias">0</text>
 
           <!-- inverter -->
           <rect x="360" y="140" width="55" height="0" fill="none"/>
-          <!-- load -->
-          <rect x="520" y="40" width="60" height="40" rx="4" fill="#232B32" stroke="#5B6572" stroke-width="1.5"/>
+
+          <!-- load: bombillo animado -->
+          <g id="loadBulb">
+            <circle cx="550" cy="55" r="16" fill="none" stroke="#5B6572" stroke-width="1.5" id="bulbGlow"/>
+            <path d="M541 50a9 9 0 1 1 18 0c0 5-4 7-5 11h-8c-1-4-5-6-5-11z"
+                  fill="#2A323A" stroke="#8A94A0" stroke-width="1.3" id="bulbBody"/>
+            <path d="M546 55 l3 -6 l2 4 l3 -5" fill="none" stroke="#8A94A0" stroke-width="1" stroke-linecap="round" id="bulbFilament"/>
+            <rect x="545" y="61" width="10" height="3" rx="1" fill="#3A4450"/>
+            <rect x="546.5" y="64" width="7" height="2.5" rx="1" fill="#3A4450"/>
+          </g>
           <text x="550" y="105" text-anchor="middle" class="node-label">CARGA</text>
           <text x="550" y="120" text-anchor="middle" class="node-value" id="svgCarga">0 W</text>
         </svg>
@@ -638,6 +733,11 @@
     <section class="card">
       <h2 class="section-title">Kit recomendado del catálogo</h2>
       <div id="kitRecommendation"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Sistema optimizado — cálculo personalizado</h2>
+      <div id="optimizedRecommendation"></div>
     </section>
 
     <section class="card">
@@ -949,6 +1049,157 @@
     `;
   }
 
+  // ===== MOTOR DE SISTEMA OPTIMIZADO =====
+  // Independiente de K1-K10. Reglas comerciales definidas para preventa:
+  // 585 W = 2,1 kWh/día por panel; 625 W = 2,2 kWh/día por panel.
+  const OPTIMIZED_INVERTERS = [
+    { w:3000, brand:'FOC Energy', type:'foc', seriesLen:2, maxPanels:4 },
+    { w:5000, brand:'FOC Energy', type:'foc', seriesLen:2, maxPanels:10 },
+    { w:6400, brand:'FOC Energy', type:'foc', seriesLen:3, maxPanels:12 },
+    { w:8000, brand:'Sosen', type:'sosen', trackers:3, maxPanels:18 },
+    { w:10000, brand:'Sosen', type:'sosen', trackers:3, maxPanels:24 },
+    { w:12000, brand:'Sosen', type:'sosen', trackers:3, maxPanels:27 },
+    { w:15000, brand:'Sosen', type:'sosen', trackers:3, maxPanels:30 }
+  ];
+
+  // NOTA: ya no se usa — el sistema optimizado ahora calcula paneles con la fórmula HSP
+  // (igual que el resto de la calculadora), no con esta regla fija de kWh/panel.
+  function optimizedProductionPerPanel(panelW){
+    return panelW === 585 ? 2.1 : 2.2;
+  }
+
+  function distributeSosenPanels(total, maxPanels){
+    if(total < 1 || total > maxPanels) return null;
+
+    // Hasta 18 paneles: usamos solo 2 entradas MPPT (caja combinadora "2 en 2", más económica).
+    // El inversor tiene 3 entradas físicas, pero no es necesario usar la tercera hasta que
+    // el reparto en 2 strings ya no alcance (más de 18 paneles).
+    if(total <= 18){
+      const a = Math.ceil(total / 2);
+      const b = total - a;
+      if(b < 1) return [total]; // caso extremo de 1 panel: un solo string
+      if(a <= 10) return [b, a].sort((x,y)=>x-y);
+    }
+
+    // Más de 18 paneles: repartimos en las 3 entradas MPPT, buscando el reparto más balanceado.
+    const candidates=[];
+    for(let a=1;a<=10;a++) for(let b=1;b<=10;b++) for(let c=1;c<=10;c++){
+      if(a+b+c===total){
+        const p=[a,b,c].sort((x,y)=>x-y);
+        candidates.push({parts:p, spread:p[2]-p[0]});
+      }
+    }
+    if(!candidates.length) return null;
+    candidates.sort((x,y)=>x.spread-y.spread);
+    return candidates[0].parts;
+  }
+
+  function getFocCombiner(numStrings){
+    const n=Math.max(1,numStrings);
+    const box=Math.min(n,5);
+    const spec=`Combiner Box DC Suntree ${box} in 1 out`;
+    return {spec,unitPrice:PRICE_LIST[spec]||0,warning:n>5?`Se requieren ${n} strings; la caja 5→1 es la mayor disponible.`:null};
+  }
+
+  function getSosenCombiner(trackersUsed){
+    const n=trackersUsed>=3?3:2;
+    const spec=`Combiner Box DC Suntree ${n} in ${n} out`;
+    return {spec,unitPrice:PRICE_LIST[spec]||0,warning:null};
+  }
+
+  function buildOptimizedInverterConfig(inv,panels){
+    if(panels<1 || panels>inv.maxPanels) return null;
+    if(inv.type==='foc'){
+      if(panels<inv.seriesLen || panels%inv.seriesLen!==0) return null;
+      const strings=panels/inv.seriesLen;
+      return {inverter:inv,panels,layout:`${inv.seriesLen}S × ${strings}P`,protection:getFocCombiner(strings)};
+    }
+    const layout=distributeSosenPanels(panels,inv.maxPanels);
+    if(!layout) return null;
+    return {inverter:inv,panels,layout,layoutText:layout.join(' / '),protection:getSosenCombiner(layout.length)};
+  }
+
+  function optimizedPriceFormula(inverterW){
+    const map={3000:'K1',5000:'K4',6400:'K6',8000:'K7',10000:'K8',12000:'K9',15000:'K10'};
+    return PRICE_FORMULAS[map[inverterW]]||null;
+  }
+
+  function findOptimizedSolution(numPanels, manualW=null, requiredInverterW=0){
+    if(numPanels<=0) return null;
+    const pool = manualW ? OPTIMIZED_INVERTERS.filter(x=>x.w===manualW) : OPTIMIZED_INVERTERS;
+    if(!pool.length) return null;
+    // Buscamos el menor número de inversores posible. Cada inversor es idéntico
+    // (misma marca y misma capacidad), porque trabajan en paralelo.
+    for(let qty=1;qty<=Math.min(12,numPanels);qty++){
+      const candidates=[];
+      pool.forEach(inv=>{
+        const base=Math.floor(numPanels/qty), rem=numPanels%qty;
+        const counts=Array.from({length:qty},(_,i)=>base+(i<rem?1:0));
+        if(counts.some(n=>n<1 || n>inv.maxPanels)) return;
+        if(!manualW && inv.w * qty < requiredInverterW) return;
+        const configs=counts.map(n=>buildOptimizedInverterConfig(inv,n));
+        if(configs.some(c=>!c)) return;
+        candidates.push({inverter:inv,qty,counts,configs,totalPanels:numPanels,totalInverterW:inv.w*qty});
+      });
+      if(candidates.length){
+        // Primero menor potencia total de inversores; a igualdad, menor capacidad individual.
+        candidates.sort((a,b)=>a.totalInverterW-b.totalInverterW || a.inverter.w-b.inverter.w);
+        return candidates[0];
+      }
+    }
+    return null;
+  }
+
+  function calcOptimizedBOM(solution,panelW,batteryResult){
+    const panelUnit=panelPriceFor(panelW);
+    const paneles=panelUnit*solution.totalPanels;
+    let inversores=0, proteccion=0;
+    const inverterLines=[], protectionLines=[];
+    solution.configs.forEach(c=>{
+      const ip=INVERTER_PRICES[c.inverter.w]||0;
+      inversores += ip;
+      inverterLines.push({spec:`${c.inverter.brand} ${c.inverter.w/1000} kW`,qty:1,total:ip});
+      const pp=c.protection.unitPrice||0;
+      proteccion += pp;
+      protectionLines.push({spec:c.protection.spec,qty:1,total:pp});
+    });
+    const soporteQty=Math.ceil(solution.totalPanels/2);
+    const cableMeters=solution.totalPanels*CABLE_METERS_PER_PANEL;
+    const soporte=PRICE_LIST['KIT soporte techo - 2 paneles']*soporteQty;
+    const cable=PRICE_LIST['Cable Fotovoltaico negro/rojo 6mm (por metro)']*cableMeters;
+    return {paneles:{qty:solution.totalPanels,total:paneles},inversores:inverterLines,baterias:batteryResult,protecciones:protectionLines,soporte:{qty:soporteQty,total:soporte},cable:{metros:cableMeters,total:cable},total:paneles+inversores+proteccion+batteryResult.total+soporte+cable};
+  }
+
+  function calcOptimizedPrice(bom,solution){
+    const formula=optimizedPriceFormula(solution.inverter.w);
+    if(!formula) return {precioConDescuento:null,precioFinal:null};
+    const precioConDescuento=Math.ceil((bom.total*formula.multiplicador+formula.suma)/10000)*10000;
+    const precioFinal=Math.round(precioConDescuento*formula.multiplicadorFinal);
+    return {precioConDescuento,precioFinal};
+  }
+
+  function renderOptimizedCard(solution,panelW,batteryResult,dailyWh,context={}){
+    const wrap=document.getElementById('optimizedRecommendation');
+    if(!solution){
+      wrap.innerHTML='<div class="kit-card warn"><div class="kit-header"><div class="kit-name">No se encontró una configuración válida</div></div><p class="note">La cantidad de paneles calculada no puede distribuirse con las reglas actuales de strings o la capacidad total de los inversores disponibles no cubre la carga simultánea estimada. Requiere revisión manual.</p></div>';
+      return;
+    }
+    const bom=calcOptimizedBOM(solution,panelW,batteryResult);
+    const pricing=calcOptimizedPrice(bom,solution);
+    // Producción real estimada con HSP y eficiencia del sitio (no una regla fija por panel).
+    const hsp = context.hsp || 3.6;
+    const eff = context.eff || 0.85;
+    const production=(solution.totalPanels*panelW*hsp*eff)/1000;
+    const coverage=dailyWh>0?production/(dailyWh/1000)*100:0;
+    const loadNote = context.peakLoadW>0 ? `<div class="kit-alt"><strong>Carga simultánea estimada:</strong> ${fmt(context.peakLoadW)} W · capacidad nominal instalada: ${fmt(solution.totalInverterW)} W.</div>` : '';
+    const manualUndersized=context.manual && solution.totalInverterW < (context.peakLoadW||0)*1.25;
+    const manualNote=context.manual ? `<div class="kit-alt"><strong>Selección manual activa:</strong> se forzó ${context.manualInverterW/1000} kW por inversor. La cantidad se ajustó automáticamente para que todos sean del mismo modelo y puedan manejar los paneles calculados.${manualUndersized?' <strong style="color:var(--danger)">⚠ La capacidad seleccionada queda por debajo de la carga simultánea × factor de seguridad; revisar.</strong>':''}</div>` : '';
+    const layouts=solution.configs.map((c,i)=>`<li><span class="k">Inversor ${i+1}</span><span class="v">${c.panels} paneles · ${c.inverter.type==='foc'?c.layout:`MPPT: ${c.layoutText}`}</span></li>`).join('');
+    const protections=[...new Set(solution.configs.map(c=>c.protection.spec))].join(' + ');
+    const price=pricing.precioFinal?`<ul class="kit-specs"><li><span class="k">BOM equipos</span><span class="v">$${fmt(bom.total)}</span></li><li><span class="k">Precio con descuento</span><span class="v">$${fmt(pricing.precioConDescuento)}</span></li><li><span class="k">Precio final</span><span class="v" style="color:var(--amber);font-weight:600;">$${fmt(pricing.precioFinal)}</span></li></ul>`:'';
+    wrap.innerHTML=`<div class="kit-card"><div class="kit-header"><div><span class="kit-id">OPT</span><div class="kit-name">Sistema optimizado</div></div><span class="kit-status">✓ Solución personalizada</span></div><ul class="kit-specs"><li><span class="k">Paneles solares</span><span class="v">${solution.totalPanels} un · ${fmt(panelW)} W · ${fmt(solution.totalPanels*panelW)} Wp</span></li><li><span class="k">Inversores</span><span class="v">${solution.qty} × ${solution.inverter.brand} ${solution.inverter.w/1000} kW · ${fmt(solution.totalInverterW)} W total</span></li>${layouts}<li><span class="k">Baterías</span><span class="v">${batteryResult.qty} un · ${batteryResult.modelKey} · ${fmt(batteryResult.totalKwh,1)} kWh nominal</span></li><li><span class="k">Protección DC</span><span class="v">${protections}</span></li><li><span class="k">Producción estimada</span><span class="v">${fmt(production,1)} kWh/día · ${fmt(coverage,1)}% cobertura</span></li></ul>${price}${loadNote}${manualNote}<div class="kit-alt">Propuesta preliminar. Validar manualmente potencia simultánea, arranques y características de las cargas antes de confirmar el inversor.</div></div>`;
+  }
+
   const defaultAppliances = [
     { name: 'Refrigerador', power: 150, qty: 1, hours: 24 },
     { name: 'Bombillos LED', power: 10, qty: 6, hours: 5 },
@@ -958,10 +1209,28 @@
 
   const tbody = document.getElementById('applianceBody');
 
+  const HP_OPTIONS = [
+    {v:'0', label:'0 HP'}, {v:'0.25',label:'0,25 HP'}, {v:'0.5',label:'0,5 HP'},
+    {v:'0.75',label:'0,75 HP'}, {v:'1',label:'1 HP'}, {v:'1.5',label:'1,5 HP'},
+    {v:'2',label:'2 HP'}, {v:'3',label:'3 HP'}, {v:'5',label:'5 HP'}, {v:'7.5',label:'7,5 HP'},
+    {v:'10',label:'10 HP'}, {v:'15',label:'15 HP'}, {v:'20',label:'20 HP'}, {v:'25',label:'25 HP'},
+    {v:'30',label:'30 HP'}, {v:'40',label:'40 HP'}, {v:'50',label:'50 HP'}
+  ];
+  function hpToWatts(hp){
+    return hp>0 ? hp*746 : 0;
+  }
+  function wattsToClosestHp(w){
+    if(!w) return '';
+    let best=HP_OPTIONS.filter(x=>x.v!=='').reduce((a,b)=>Math.abs(hpToWatts(parseFloat(a.v))-w)<Math.abs(hpToWatts(parseFloat(b.v))-w)?a:b);
+    return best.v;
+  }
+
   function rowTemplate(item){
     const tr = document.createElement('tr');
+    const hpValue = item.hp ?? '0';
     tr.innerHTML = `
       <td><input type="text" class="f-name" value="${item.name}"></td>
+      <td><select class="f-hp">${HP_OPTIONS.map(o=>`<option value="${o.v}" ${String(o.v)===String(hpValue)?'selected':''}>${o.label}</option>`).join('')}</select></td>
       <td><input type="number" class="f-power" min="0" step="1" value="${item.power}"></td>
       <td><input type="number" class="f-qty" min="1" step="1" value="${item.qty}"></td>
       <td><input type="number" class="f-hours" min="0" step="0.5" max="24" value="${item.hours}"></td>
@@ -969,7 +1238,18 @@
       <td><button class="remove-row" type="button" aria-label="Eliminar equipo">×</button></td>
     `;
     tbody.appendChild(tr);
-    tr.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalc));
+    const hpSel=tr.querySelector('.f-hp');
+    const powerInput=tr.querySelector('.f-power');
+    hpSel.addEventListener('change',()=>{
+      if(parseFloat(hpSel.value)>0){ powerInput.value=Math.round(hpToWatts(parseFloat(hpSel.value))); powerInput.dataset.fromHp='1'; }
+      else powerInput.dataset.fromHp='0';
+      recalc();
+    });
+    powerInput.addEventListener('input',()=>{
+      if(powerInput.dataset.fromHp==='1') hpSel.value=wattsToClosestHp(parseFloat(powerInput.value)||0);
+      recalc();
+    });
+    tr.querySelectorAll('input,select').forEach(inp => { if(inp!==hpSel && inp!==powerInput) inp.addEventListener('input', recalc); });
     tr.querySelector('.remove-row').addEventListener('click', () => { tr.remove(); recalc(); });
   }
 
@@ -994,7 +1274,14 @@
     recalc();
   });
 
-  ['hsp','autonomy','systemLoss','batteryType','voltageOverride','panelW','battKwh','safetyFactor']
+  const manualSelectionCheck = document.getElementById('manualSelectionCheck');
+  const manualSelectionFields = document.getElementById('manualSelectionFields');
+  manualSelectionCheck.addEventListener('change',()=>{
+    manualSelectionFields.style.display = manualSelectionCheck.checked ? 'block' : 'none';
+    recalc();
+  });
+
+  ['hsp','autonomy','systemLoss','batteryType','voltageOverride','panelW','battKwh','safetyFactor','manualInverterW','manualBatteryQty']
     .forEach(id => {
       const el = document.getElementById(id);
       el.addEventListener('input', recalc);
@@ -1032,14 +1319,20 @@
     const battKwh = parseFloat(document.getElementById('battKwh').value) || 11;
     const safety = parseFloat(document.getElementById('safetyFactor').value) || 1.25;
 
+    // Motor comercial: cantidad de paneles según HSP, eficiencia y consumo real.
     const adjustedWh = dailyWh / eff;
     const fvPowerNeeded = adjustedWh / hsp;
-    const numPanels = panelW > 0 ? Math.ceil(fvPowerNeeded / panelW) : 0;
+    const numPanelsCommercial = panelW > 0 ? Math.ceil(fvPowerNeeded / panelW) : 0;
+
+    // Motor optimizado: usa la MISMA cantidad de paneles que el cálculo técnico (HSP),
+    // ajustada al consumo real del cliente — ya no se usa la regla fija de 2.1/2.2 kWh/panel.
+    const numPanels = numPanelsCommercial;
 
     const autonomyDays = autonomyHours / 24;
     const bankWh = (dailyWh * autonomyDays) / dod;
     const bankKwh = bankWh / 1000;
-    const numBatteries = battKwh > 0 ? Math.ceil(bankKwh / battKwh) : 0;
+    const manualBatteryQty = manualSelectionCheck.checked ? (parseInt(document.getElementById('manualBatteryQty').value,10)||0) : 0;
+    const numBatteries = manualBatteryQty>0 ? manualBatteryQty : (battKwh > 0 ? Math.ceil(bankKwh / battKwh) : 0);
 
     const rawInverterW = peakLoadW * safety;
     // Los inversores del catálogo vienen en tamaños fijos — mostramos el estándar más cercano
@@ -1081,7 +1374,7 @@
     document.getElementById('outPotenciaFV').textContent = fmt(fvPowerNeeded);
     document.getElementById('outFVsub').textContent = `Con ${hsp} HSP y ${(eff*100).toFixed(0)}% de eficiencia`;
 
-    document.getElementById('outPaneles').textContent = fmt(numPanels);
+    document.getElementById('outPaneles').textContent = fmt(numPanelsCommercial);
     document.getElementById('outPanelesSub').textContent = `De ${fmt(panelW)} Wp cada uno`;
 
     document.getElementById('outBaterias').textContent = fmt(numBatteries);
@@ -1093,12 +1386,20 @@
       : 'Según carga simultánea y capacidad de paneles';
 
     document.getElementById('svgHsp').textContent = hsp + ' HSP';
-    document.getElementById('svgPaneles').textContent = numPanels + ' pan.';
+    document.getElementById('svgPaneles').textContent = numPanelsCommercial + ' pan.';
     document.getElementById('svgBaterias').textContent = numBatteries + ' bat.';
     document.getElementById('svgCarga').textContent = fmt(peakLoadW) + ' W';
 
     const kitResult = recommendKit(fvPowerNeeded, bankKwh, inverterW);
     renderKitCard(kitResult, fvPowerNeeded, bankKwh, inverterW);
+
+    const manualInverterW = manualSelectionCheck.checked ? parseInt(document.getElementById('manualInverterW').value,10) : null;
+    const optimized = findOptimizedSolution(numPanels, manualInverterW, rawInverterW);
+    const autoBattery = calcManualBattery(bankKwh, voltage, battKwh);
+    const optimizedBattery = manualBatteryQty>0 ? {...autoBattery, qty:manualBatteryQty, totalKwh:manualBatteryQty*battKwh, total:autoBattery.unitPrice*manualBatteryQty} : autoBattery;
+    renderOptimizedCard(optimized, panelW, optimizedBattery, dailyWh, {peakLoadW, manual:manualSelectionCheck.checked, manualInverterW, bankKwh, hsp, eff});
+    window.__currentOptimizedResult = optimized;
+    window.__currentOptimizedBattery = optimizedBattery;
     window.__currentKitResult = kitResult;
     window.__currentVoltage = voltage;
   }
@@ -1134,6 +1435,7 @@
     tbody.querySelectorAll('tr').forEach(tr => {
       appliances.push({
         equipo: tr.querySelector('.f-name').value,
+        hp: parseFloat(tr.querySelector('.f-hp').value) || null,
         potencia_w: parseFloat(tr.querySelector('.f-power').value) || 0,
         cantidad: parseFloat(tr.querySelector('.f-qty').value) || 0,
         horas_dia: parseFloat(tr.querySelector('.f-hours').value) || 0
@@ -1159,7 +1461,10 @@
         voltaje_sistema: window.__currentVoltage || null,
         potencia_panel_w: parseFloat(document.getElementById('panelW').value),
         capacidad_bateria_kwh: parseFloat(document.getElementById('battKwh').value),
-        factor_seguridad_inversor: parseFloat(document.getElementById('safetyFactor').value)
+        factor_seguridad_inversor: parseFloat(document.getElementById('safetyFactor').value),
+        seleccion_manual_activa: manualSelectionCheck.checked,
+        inversor_manual_w: manualSelectionCheck.checked ? parseInt(document.getElementById('manualInverterW').value,10) : null,
+        baterias_manual_qty: manualSelectionCheck.checked ? (parseInt(document.getElementById('manualBatteryQty').value,10)||0) : 0
       },
       equipos: appliances,
       resultados: {
@@ -1173,7 +1478,26 @@
       kit_cumple: kr ? kr.cumple : null,
       precio_equipos: kitPricing ? kitPricing.bom.total : null,
       precio_con_descuento: kitPricing ? kitPricing.precioConDescuento : null,
-      precio_final: kitPricing ? kitPricing.precioFinal : null
+      precio_final: kitPricing ? kitPricing.precioFinal : null,
+      sistema_optimizado: (() => {
+        const os = window.__currentOptimizedResult;
+        const ob = window.__currentOptimizedBattery;
+        if(!os) return null;
+        const panelW = parseFloat(document.getElementById('panelW').value);
+        const bom = calcOptimizedBOM(os, panelW, ob);
+        const pricing = calcOptimizedPrice(bom, os);
+        return {
+          paneles: os.totalPanels,
+          potencia_fv_wp: os.totalPanels * panelW,
+          marca: os.inverter.brand,
+          inversor_w: os.inverter.w,
+          cantidad_inversores: os.qty,
+          distribucion: os.configs.map(c => c.inverter.type === 'foc' ? c.layout : c.layoutText),
+          precio_equipos: bom.total,
+          precio_con_descuento: pricing.precioConDescuento,
+          precio_final: pricing.precioFinal
+        };
+      })()
     };
   }
 
