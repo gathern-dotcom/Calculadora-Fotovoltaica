@@ -23,7 +23,7 @@
   body{
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Segoe UI', sans-serif;
     line-height: 1.45;
     min-height: 100vh;
   }
@@ -31,7 +31,7 @@
     *{ animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 
-  .display{ font-family: 'Space Grotesk', 'Inter', sans-serif; }
+  .display{ font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Segoe UI', sans-serif; }
   .mono{ font-family: 'IBM Plex Mono', 'Courier New', monospace; }
 
   header.top{
@@ -95,6 +95,26 @@
     padding: 20px;
   }
   section.card + section.card{ margin-top: 20px; }
+
+  .side-by-side{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .side-by-side section.card{ margin-top: 0; }
+  @media (max-width: 900px){
+    .side-by-side{ grid-template-columns: 1fr; }
+  }
+
+  .full-width-section{
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 28px 28px;
+  }
+  @media (max-width: 900px){
+    .full-width-section{ padding: 0 16px 16px; }
+  }
 
   h2.section-title{
     font-size: 12px;
@@ -180,7 +200,7 @@
     font-size: 12px;
     width: 100%;
     min-width: 0;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Segoe UI', sans-serif;
   }
   table.appliances input[type=number]{
     width: 100%;
@@ -270,7 +290,7 @@
     margin-bottom: 6px;
   }
   .kpi .kpi-value{
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Segoe UI', sans-serif;
     font-size: 24px;
     line-height: 1.15;
     min-width: 0;
@@ -309,7 +329,7 @@
     fill: var(--muted);
   }
   .node-value{
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Segoe UI', sans-serif;
     font-size: 13px;
     font-weight: 600;
     fill: var(--text);
@@ -355,7 +375,7 @@
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Segoe UI', sans-serif;
   }
   button.primary:hover{ background: #ffb84d; }
   button.secondary{
@@ -411,7 +431,7 @@
     letter-spacing: 0.04em;
   }
   .kit-card .kit-name{
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Segoe UI', sans-serif;
     font-size: 18px;
     font-weight: 600;
   }
@@ -440,6 +460,23 @@
     margin-top: 10px;
     font-size: 11.5px;
     color: var(--muted);
+  }
+
+  .bom-details{
+    margin-top: 10px;
+    font-size: 11.5px;
+  }
+  .bom-details summary{
+    cursor: pointer;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    user-select: none;
+  }
+  .bom-details summary:hover{ color: var(--text); }
+  .bom-details .bom-value{
+    margin-top: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text);
   }
 
   /* history */
@@ -729,7 +766,11 @@
         Ajusta los factores de seguridad según tu criterio de ingeniería, normativa local y las condiciones reales del sitio.
       </p>
     </section>
+  </div>
+</main>
 
+<div class="full-width-section">
+  <div class="side-by-side">
     <section class="card">
       <h2 class="section-title">Kit recomendado del catálogo</h2>
       <div id="kitRecommendation"></div>
@@ -739,25 +780,25 @@
       <h2 class="section-title">Sistema optimizado — cálculo personalizado</h2>
       <div id="optimizedRecommendation"></div>
     </section>
-
-    <section class="card">
-      <div class="actions">
-        <button class="primary" id="saveCloudBtn" type="button">Guardar proyecto</button>
-        <button class="secondary" id="downloadBtn" type="button">Exportar copia local (JSON)</button>
-        <button class="secondary" id="resetBtn" type="button">Restablecer valores</button>
-      </div>
-      <p class="note" id="saveStatus"></p>
-    </section>
-
-    <section class="card">
-      <h2 class="section-title">Historial de proyectos guardados</h2>
-      <div class="actions" style="margin-top:0; margin-bottom:14px;">
-        <button class="secondary" id="refreshHistoryBtn" type="button">Actualizar lista</button>
-      </div>
-      <div id="historyList" class="note">Cargando…</div>
-    </section>
   </div>
-</main>
+
+  <section class="card" style="margin-top:20px;">
+    <div class="actions">
+      <button class="primary" id="saveCloudBtn" type="button">Guardar proyecto</button>
+      <button class="secondary" id="downloadBtn" type="button">Exportar copia local (JSON)</button>
+      <button class="secondary" id="resetBtn" type="button">Restablecer valores</button>
+    </div>
+    <p class="note" id="saveStatus"></p>
+  </section>
+
+  <section class="card" style="margin-top:20px;">
+    <h2 class="section-title">Historial de proyectos guardados</h2>
+    <div class="actions" style="margin-top:0; margin-bottom:14px;">
+      <button class="secondary" id="refreshHistoryBtn" type="button">Actualizar lista</button>
+    </div>
+    <div id="historyList" class="note">Cargando…</div>
+  </section>
+</div>
 
 <p class="footer-note">Dimensionador FV — cálculo de referencia para sistemas fotovoltaicos aislados</p>
 
@@ -790,7 +831,7 @@
       inversor:'FOC Energy 6.4KW, 48V, 120/240V', inversorW:6400,
       bateriaModelo:'LFP FOC Energy 48V, 16 kWh', bateriaCant:1, bateriaKwhUnit:16,
       proteccionDC:'Combiner Box DC Suntree 4 in 1 out', soporte:6, cable:110 },
-    { id:'K7', nombre:'KIT Hogar Full', paneles:11, panelW:625,
+    { id:'K7', nombre:'KIT Hogar Full', paneles:14, panelW:625,
       inversor:'Hybrid Inverter Sosen 8KW, 48V, 120/240V', inversorW:8000,
       bateriaModelo:'LFP FOC Energy 48V, 11 kWh', bateriaCant:2, bateriaKwhUnit:11,
       proteccionDC:'Combiner Box DC Suntree 2 in 2 out', soporte:7, cable:70 },
@@ -995,14 +1036,19 @@
   }
 
   function recommendKit(neededWp, neededBankKwh, neededInverterW){
-    const candidatos = KITS.filter(k =>
+    // Recorremos el catálogo en su orden real (K1→K10, de menor a mayor gama) y
+    // devolvemos el PRIMERO que cumpla los tres requisitos. No ordenamos por Wp total,
+    // porque el catálogo no es estrictamente creciente en Wp (ej. K7 tiene menos Wp que
+    // K6 pero más inversor y batería) — ordenar por Wp hacía que kits como K6 quedaran
+    // "dominados" por el siguiente y nunca se pudieran recomendar.
+    const candidato = KITS.find(k =>
       k.totalWp >= neededWp &&
       k.totalBateriaKwh >= neededBankKwh &&
       k.inversorW >= neededInverterW
-    ).sort((a,b) => a.totalWp - b.totalWp);
+    );
 
-    if(candidatos.length > 0){
-      return { kit: candidatos[0], cumple: true };
+    if(candidato){
+      return { kit: candidato, cumple: true };
     }
     // Ninguno cumple los tres a la vez: se sugiere el más grande como referencia
     const masGrande = [...KITS].sort((a,b) => b.totalWp - a.totalWp)[0];
@@ -1108,15 +1154,20 @@
   }
 
   function buildOptimizedInverterConfig(inv,panels){
-    if(panels<1 || panels>inv.maxPanels) return null;
+    if(panels<1) return null;
     if(inv.type==='foc'){
-      if(panels<inv.seriesLen || panels%inv.seriesLen!==0) return null;
-      const strings=panels/inv.seriesLen;
-      return {inverter:inv,panels,layout:`${inv.seriesLen}S × ${strings}P`,protection:getFocCombiner(strings)};
+      // Si la cantidad no es múltiplo exacto del tamaño de serie, completamos la última
+      // serie con un panel adicional en vez de descartar este inversor (así se evita saltar
+      // a un inversor de otra familia solo porque el conteo no "calzó" exacto).
+      const rounded = Math.ceil(panels/inv.seriesLen)*inv.seriesLen;
+      if(rounded > inv.maxPanels) return null;
+      const strings=rounded/inv.seriesLen;
+      return {inverter:inv,panels:rounded,requestedPanels:panels,layout:`${inv.seriesLen}S × ${strings}P`,protection:getFocCombiner(strings)};
     }
+    if(panels>inv.maxPanels) return null;
     const layout=distributeSosenPanels(panels,inv.maxPanels);
     if(!layout) return null;
-    return {inverter:inv,panels,layout,layoutText:layout.join(' / '),protection:getSosenCombiner(layout.length)};
+    return {inverter:inv,panels,requestedPanels:panels,layout,layoutText:layout.join(' / '),protection:getSosenCombiner(layout.length)};
   }
 
   function optimizedPriceFormula(inverterW){
@@ -1135,11 +1186,12 @@
       pool.forEach(inv=>{
         const base=Math.floor(numPanels/qty), rem=numPanels%qty;
         const counts=Array.from({length:qty},(_,i)=>base+(i<rem?1:0));
-        if(counts.some(n=>n<1 || n>inv.maxPanels)) return;
+        if(counts.some(n=>n<1)) return;
         if(!manualW && inv.w * qty < requiredInverterW) return;
         const configs=counts.map(n=>buildOptimizedInverterConfig(inv,n));
         if(configs.some(c=>!c)) return;
-        candidates.push({inverter:inv,qty,counts,configs,totalPanels:numPanels,totalInverterW:inv.w*qty});
+        const totalPanels=configs.reduce((sum,c)=>sum+c.panels,0);
+        candidates.push({inverter:inv,qty,counts,configs,totalPanels,requestedPanels:numPanels,totalInverterW:inv.w*qty});
       });
       if(candidates.length){
         // Primero menor potencia total de inversores; a igualdad, menor capacidad individual.
@@ -1190,14 +1242,15 @@
     const hsp = context.hsp || 3.6;
     const eff = context.eff || 0.85;
     const production=(solution.totalPanels*panelW*hsp*eff)/1000;
+    const productionMonth=production*30;
     const coverage=dailyWh>0?production/(dailyWh/1000)*100:0;
     const loadNote = context.peakLoadW>0 ? `<div class="kit-alt"><strong>Carga simultánea estimada:</strong> ${fmt(context.peakLoadW)} W · capacidad nominal instalada: ${fmt(solution.totalInverterW)} W.</div>` : '';
     const manualUndersized=context.manual && solution.totalInverterW < (context.peakLoadW||0)*1.25;
     const manualNote=context.manual ? `<div class="kit-alt"><strong>Selección manual activa:</strong> se forzó ${context.manualInverterW/1000} kW por inversor. La cantidad se ajustó automáticamente para que todos sean del mismo modelo y puedan manejar los paneles calculados.${manualUndersized?' <strong style="color:var(--danger)">⚠ La capacidad seleccionada queda por debajo de la carga simultánea × factor de seguridad; revisar.</strong>':''}</div>` : '';
     const layouts=solution.configs.map((c,i)=>`<li><span class="k">Inversor ${i+1}</span><span class="v">${c.panels} paneles · ${c.inverter.type==='foc'?c.layout:`MPPT: ${c.layoutText}`}</span></li>`).join('');
     const protections=[...new Set(solution.configs.map(c=>c.protection.spec))].join(' + ');
-    const price=pricing.precioFinal?`<ul class="kit-specs"><li><span class="k">BOM equipos</span><span class="v">$${fmt(bom.total)}</span></li><li><span class="k">Precio con descuento</span><span class="v">$${fmt(pricing.precioConDescuento)}</span></li><li><span class="k">Precio final</span><span class="v" style="color:var(--amber);font-weight:600;">$${fmt(pricing.precioFinal)}</span></li></ul>`:'';
-    wrap.innerHTML=`<div class="kit-card"><div class="kit-header"><div><span class="kit-id">OPT</span><div class="kit-name">Sistema optimizado</div></div><span class="kit-status">✓ Solución personalizada</span></div><ul class="kit-specs"><li><span class="k">Paneles solares</span><span class="v">${solution.totalPanels} un · ${fmt(panelW)} W · ${fmt(solution.totalPanels*panelW)} Wp</span></li><li><span class="k">Inversores</span><span class="v">${solution.qty} × ${solution.inverter.brand} ${solution.inverter.w/1000} kW · ${fmt(solution.totalInverterW)} W total</span></li>${layouts}<li><span class="k">Baterías</span><span class="v">${batteryResult.qty} un · ${batteryResult.modelKey} · ${fmt(batteryResult.totalKwh,1)} kWh nominal</span></li><li><span class="k">Protección DC</span><span class="v">${protections}</span></li><li><span class="k">Producción estimada</span><span class="v">${fmt(production,1)} kWh/día · ${fmt(coverage,1)}% cobertura</span></li></ul>${price}${loadNote}${manualNote}<div class="kit-alt">Propuesta preliminar. Validar manualmente potencia simultánea, arranques y características de las cargas antes de confirmar el inversor.</div></div>`;
+    const price=pricing.precioFinal?`<ul class="kit-specs"><li><span class="k">Precio con descuento</span><span class="v">$${fmt(pricing.precioConDescuento)}</span></li><li><span class="k">Precio final</span><span class="v" style="color:var(--amber);font-weight:600;">$${fmt(pricing.precioFinal)}</span></li></ul><details class="bom-details"><summary>Ver BOM equipos</summary><div class="bom-value">$${fmt(bom.total)}</div></details>`:'';
+    wrap.innerHTML=`<div class="kit-card"><div class="kit-header"><div><span class="kit-id">OPT</span><div class="kit-name">Sistema optimizado</div></div><span class="kit-status">✓ Solución personalizada</span></div><ul class="kit-specs"><li><span class="k">Paneles solares</span><span class="v">${solution.totalPanels} un · ${fmt(panelW)} W · ${fmt(solution.totalPanels*panelW)} Wp</span></li><li><span class="k">Inversores</span><span class="v">${solution.qty} × ${solution.inverter.brand} ${solution.inverter.w/1000} kW · ${fmt(solution.totalInverterW)} W total</span></li>${layouts}<li><span class="k">Baterías</span><span class="v">${batteryResult.qty} un · ${batteryResult.modelKey} · ${fmt(batteryResult.totalKwh,1)} kWh nominal</span></li><li><span class="k">Protección DC</span><span class="v">${protections}</span></li><li><span class="k">Producción estimada</span><span class="v">${fmt(production,1)} kWh/día · ${fmt(productionMonth,0)} kWh/mes · ${fmt(coverage,1)}% cobertura</span></li></ul>${price}${loadNote}${manualNote}<div class="kit-alt">Propuesta preliminar. Validar manualmente potencia simultánea, arranques y características de las cargas antes de confirmar el inversor.</div></div>`;
   }
 
   const defaultAppliances = [
@@ -1316,7 +1369,6 @@
     const eff = parseFloat(document.getElementById('systemLoss').value) || 0.85;
     const dod = parseFloat(document.getElementById('batteryType').value) || 0.9;
     const panelW = parseFloat(document.getElementById('panelW').value) || 625;
-    const battKwh = parseFloat(document.getElementById('battKwh').value) || 11;
     const safety = parseFloat(document.getElementById('safetyFactor').value) || 1.25;
 
     // Motor comercial: cantidad de paneles según HSP, eficiencia y consumo real.
@@ -1327,12 +1379,6 @@
     // Motor optimizado: usa la MISMA cantidad de paneles que el cálculo técnico (HSP),
     // ajustada al consumo real del cliente — ya no se usa la regla fija de 2.1/2.2 kWh/panel.
     const numPanels = numPanelsCommercial;
-
-    const autonomyDays = autonomyHours / 24;
-    const bankWh = (dailyWh * autonomyDays) / dod;
-    const bankKwh = bankWh / 1000;
-    const manualBatteryQty = manualSelectionCheck.checked ? (parseInt(document.getElementById('manualBatteryQty').value,10)||0) : 0;
-    const numBatteries = manualBatteryQty>0 ? manualBatteryQty : (battKwh > 0 ? Math.ceil(bankKwh / battKwh) : 0);
 
     const rawInverterW = peakLoadW * safety;
     // Los inversores del catálogo vienen en tamaños fijos — mostramos el estándar más cercano
@@ -1367,6 +1413,18 @@
       voltage = parseFloat(voltageOverride);
     }
     document.getElementById('voltageInfo').textContent = voltage + ' V';
+
+    // Ahora que ya sabemos el voltaje del sistema, ajustamos las opciones de batería
+    // disponibles (2.9/4 kWh son de 12V y solo aplican a sistemas de 24V; 11/16 kWh
+    // son de 48V) y recién ahí leemos el valor seleccionado.
+    refreshBatteryOptions(voltage);
+    const battKwh = parseFloat(document.getElementById('battKwh').value) || (voltage === 24 ? 2.9 : 11);
+
+    const autonomyDays = autonomyHours / 24;
+    const bankWh = (dailyWh * autonomyDays) / dod;
+    const bankKwh = bankWh / 1000;
+    const manualBatteryQty = manualSelectionCheck.checked ? (parseInt(document.getElementById('manualBatteryQty').value,10)||0) : 0;
+    const numBatteries = manualBatteryQty>0 ? manualBatteryQty : (battKwh > 0 ? Math.ceil(bankKwh / battKwh) : 0);
 
     document.getElementById('outConsumo').textContent = fmt(dailyWh);
     document.getElementById('outConsumoKwh').textContent = fmt(dailyWh/1000, 2) + ' kWh/día';
@@ -1420,7 +1478,7 @@
     document.getElementById('batteryType').value = '0.9';
     document.getElementById('voltageOverride').value = 'auto';
     document.getElementById('panelW').value = '625';
-    document.getElementById('battKwh').value = '11';
+    document.getElementById('battKwh').dataset.voltage = ''; // fuerza a refreshBatteryOptions a reconstruir las opciones
     document.getElementById('safetyFactor').value = 1.25;
     document.getElementById('clientName').value = '';
     document.getElementById('clientPhone').value = '';
@@ -1579,12 +1637,13 @@
         ? fmt(row.resultados.consumo_diario_wh/1000, 2) + ' kWh/día' : '';
       const ubicacion = row.ubicacion ? ' · ' + row.ubicacion : '';
       const telefono = row.telefono ? ' · ' + row.telefono : '';
+      const niu = row.niu ? ' · NIU: ' + row.niu : '';
       const div = document.createElement('div');
       div.className = 'history-item';
       div.innerHTML = `
         <div class="h-main">
           <span class="h-name">${row.cliente || 'Sin nombre'}${ubicacion}</span>
-          <span class="h-meta">${fecha} ${consumo ? '· ' + consumo : ''}${telefono}</span>
+          <span class="h-meta">${fecha} ${consumo ? '· ' + consumo : ''}${telefono}${niu}</span>
         </div>
         <span class="h-kit">${row.kit_recomendado || '—'}</span>
       `;
