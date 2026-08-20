@@ -2,6 +2,7 @@
 // Se despliega sola apenas subas esta carpeta "api" a tu repositorio de GitHub —
 // Vercel detecta cualquier archivo dentro de /api como un endpoint.
 //
+//
 // Usa la API GRATUITA de Google Gemini (sin tarjeta de crédito, sin vencimiento).
 // Requiere una variable de entorno en Vercel: GEMINI_API_KEY
 // Consíguela gratis en https://aistudio.google.com/apikey
