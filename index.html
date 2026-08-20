@@ -259,6 +259,38 @@
     border-top: 1px solid var(--border);
   }
 
+  .ai-extract-box{
+    background: var(--panel-2);
+    border: 1px dashed var(--amber);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .ai-extract-box label{
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .ai-extract-box textarea{
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 12.5px;
+    font-family: inherit;
+    color: var(--text);
+    resize: vertical;
+    min-height: 60px;
+  }
+  .ai-extract-box textarea:focus{
+    outline: 2px solid var(--amber);
+    outline-offset: 1px;
+    border-color: var(--amber);
+  }
+
   .checkbox-row{
     display:flex; align-items:center; gap: 8px;
     font-size: 12.5px;
@@ -547,6 +579,16 @@
           sin importar el interruptor de arriba. Ajusta los equipos a los reales del proyecto para que el
           inversor quede bien calculado, aunque estés usando el consumo mensual para paneles/batería.
         </p>
+
+        <div class="ai-extract-box">
+          <label for="aiEquipmentText">✨ Describe los equipos con tus palabras y deja que la IA llene la tabla</label>
+          <textarea id="aiEquipmentText" rows="3" placeholder="Ej: tiene una nevera grande, dos bombillos en la sala, un televisor que usa en las noches, y una bomba de agua que enciende una hora al día..."></textarea>
+          <div class="actions" style="margin-top:8px; margin-bottom:0;">
+            <button class="secondary" id="aiExtractBtn" type="button">Analizar con IA</button>
+          </div>
+          <p class="note" id="aiExtractStatus" style="margin-top:8px;"></p>
+        </div>
+
         <table class="appliances" id="applianceTable">
           <thead>
             <tr>
@@ -1329,6 +1371,50 @@
 
   document.getElementById('addRow').addEventListener('click', () => {
     rowTemplate({ name: '', power: 0, qty: 1, hours: 0 });
+  });
+
+  document.getElementById('aiExtractBtn').addEventListener('click', async () => {
+    const text = document.getElementById('aiEquipmentText').value.trim();
+    const status = document.getElementById('aiExtractStatus');
+    const btn = document.getElementById('aiExtractBtn');
+
+    if(!text){
+      status.textContent = 'Escribe una descripción de los equipos primero.';
+      status.style.color = 'var(--danger)';
+      return;
+    }
+
+    status.textContent = 'Analizando con IA…';
+    status.style.color = 'var(--muted)';
+    btn.disabled = true;
+
+    try{
+      const resp = await fetch('/api/analyze-equipment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      const data = await resp.json();
+      if(!resp.ok) throw new Error(data.error || 'Error desconocido');
+      if(!data.equipos || !data.equipos.length) throw new Error('La IA no encontró equipos en el texto.');
+
+      data.equipos.forEach(eq => rowTemplate({
+        name: eq.equipo || '',
+        power: eq.potencia_w || 0,
+        qty: eq.cantidad || 1,
+        hours: eq.horas_dia || 0
+      }));
+      recalc();
+
+      status.textContent = `✓ Se agregaron ${data.equipos.length} equipo(s) a la tabla. Revísalos y ajusta lo que haga falta.`;
+      status.style.color = 'var(--green)';
+      document.getElementById('aiEquipmentText').value = '';
+    }catch(err){
+      status.textContent = 'Error: ' + err.message;
+      status.style.color = 'var(--danger)';
+    }finally{
+      btn.disabled = false;
+    }
   });
 
   const overrideCheck = document.getElementById('overrideCheck');
