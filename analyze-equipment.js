@@ -2,8 +2,9 @@
 // Se despliega sola apenas subas esta carpeta "api" a tu repositorio de GitHub —
 // Vercel detecta cualquier archivo dentro de /api como un endpoint.
 //
-// Requiere una variable de entorno en Vercel: ANTHROPIC_API_KEY
-// (Project Settings > Environment Variables en el dashboard de Vercel)
+// Usa la API GRATUITA de Google Gemini (sin tarjeta de crédito, sin vencimiento).
+// Requiere una variable de entorno en Vercel: GEMINI_API_KEY
+// Consíguela gratis en https://aistudio.google.com/apikey
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -15,9 +16,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Falta el texto a analizar' });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Falta configurar ANTHROPIC_API_KEY en Vercel' });
+    return res.status(500).json({ error: 'Falta configurar GEMINI_API_KEY en Vercel' });
   }
 
   const prompt = `Eres un asistente que ayuda a un instalador de sistemas solares en Colombia a convertir una descripción en texto libre de los equipos eléctricos de un cliente en una lista estructurada.
@@ -27,7 +28,7 @@ Descripción del cliente:
 ${text}
 """
 
-Devuelve SOLO un array JSON (sin texto adicional, sin markdown, sin backticks) con este formato exacto:
+Devuelve un array JSON con este formato exacto, sin texto adicional:
 [
   { "equipo": "nombre del equipo", "potencia_w": numero, "cantidad": numero, "horas_dia": numero }
 ]
@@ -39,39 +40,44 @@ Reglas:
 - No inventes equipos que no se mencionaron.
 - Responde en español.`;
 
+  const model = 'gemini-2.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }]
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json'
+        }
       })
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      return res.status(502).json({ error: 'Error al llamar a la IA: ' + errText });
+      return res.status(502).json({ error: 'Error al llamar a Gemini: ' + errText });
     }
 
     const data = await response.json();
-    const rawText = (data.content && data.content[0] && data.content[0].text) || '';
-    const cleaned = rawText.replace(/```json|```/g, '').trim();
+    const rawText =
+      (data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts &&
+        data.candidates[0].content.parts[0] &&
+        data.candidates[0].content.parts[0].text) || '';
 
     let equipos;
     try {
-      equipos = JSON.parse(cleaned);
+      equipos = JSON.parse(rawText);
     } catch (parseErr) {
-      return res.status(502).json({ error: 'La IA no devolvió un JSON válido: ' + cleaned.slice(0, 200) });
+      return res.status(502).json({ error: 'Gemini no devolvió un JSON válido: ' + rawText.slice(0, 200) });
     }
 
     if (!Array.isArray(equipos)) {
-      return res.status(502).json({ error: 'La IA no devolvió una lista válida' });
+      return res.status(502).json({ error: 'Gemini no devolvió una lista válida' });
     }
 
     return res.status(200).json({ equipos });
