@@ -571,56 +571,79 @@ function validarEquipos(equipos) {
     return null;
   }
 
-
   return equipos
     .map(eq => {
 
-      if (
-        !eq ||
-        typeof eq !== 'object'
-      ) {
+      if (!eq || typeof eq !== 'object') {
         return null;
       }
 
-
-      const equipo =
-        String(
-          eq.equipo || ''
-        ).trim();
-
+      const equipo = String(eq.equipo || '').trim();
 
       if (!equipo) {
         return null;
       }
 
 
-      let hp =
-        Number(eq.hp) || 0;
+      // ====================================================
+      // HP
+      // ====================================================
+
+      let hp = Number(eq.hp);
+
+      if (!Number.isFinite(hp)) {
+        hp = 0;
+      }
 
 
-      let potencia =
-        Number(eq.potencia_w) || 0;
+      // ====================================================
+      // POTENCIA
+      // ====================================================
+
+      let potencia = Number(eq.potencia_w);
+
+      if (!Number.isFinite(potencia)) {
+        potencia = 0;
+      }
 
 
-      const cantidad =
-        Number(eq.cantidad) || 1;
+      // ====================================================
+      // SI EXISTE HP, HP ES LA FUENTE PRINCIPAL
+      // ====================================================
+
+      if (hp > 0) {
+
+        // 1 HP = 746 W
+        potencia = hp * 746;
+
+      }
 
 
-      const horas =
-        Number(eq.horas_dia) || 0;
+      // ====================================================
+      // CANTIDAD
+      // ====================================================
 
-
-      // Si la IA dio HP pero no W,
-      // hacemos la conversión nosotros.
+      let cantidad = Number(eq.cantidad);
 
       if (
-        hp > 0 &&
-        potencia <= 0
+        !Number.isFinite(cantidad) ||
+        cantidad <= 0
       ) {
+        cantidad = 1;
+      }
 
-        potencia =
-          hp * 746;
 
+      // ====================================================
+      // HORAS
+      // ====================================================
+
+      let horas = Number(eq.horas_dia);
+
+      if (
+        !Number.isFinite(horas) ||
+        horas < 0
+      ) {
+        horas = 0;
       }
 
 
@@ -628,24 +651,15 @@ function validarEquipos(equipos) {
 
         equipo,
 
+        // Conservamos HP
         hp,
 
-        potencia_w:
-          Math.round(
-            potencia
-          ),
+        // Potencia calculada desde HP
+        potencia_w: Math.round(potencia),
 
-        cantidad:
-          Math.max(
-            1,
-            cantidad
-          ),
+        cantidad,
 
-        horas_dia:
-          Math.max(
-            0,
-            horas
-          )
+        horas_dia: horas
 
       };
 
