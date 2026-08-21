@@ -580,15 +580,6 @@
           inversor quede bien calculado, aunque estés usando el consumo mensual para paneles/batería.
         </p>
 
-        <div class="ai-extract-box">
-          <label for="aiEquipmentText">✨ Describe los equipos con tus palabras y deja que la IA llene la tabla</label>
-          <textarea id="aiEquipmentText" rows="3" placeholder="Ej: tiene una nevera grande, dos bombillos en la sala, un televisor que usa en las noches, y una bomba de agua que enciende una hora al día..."></textarea>
-          <div class="actions" style="margin-top:8px; margin-bottom:0;">
-            <button class="secondary" id="aiExtractBtn" type="button">Analizar con IA</button>
-          </div>
-          <p class="note" id="aiExtractStatus" style="margin-top:8px;"></p>
-        </div>
-
         <table class="appliances" id="applianceTable">
           <thead>
             <tr>
@@ -735,6 +726,18 @@
 
   <!-- RIGHT: RESULTS -->
   <div>
+    <section class="card">
+      <h2 class="section-title">✨ Analizar equipos con IA</h2>
+      <div class="ai-extract-box" style="border:none; padding:0; margin-bottom:0; background:transparent;">
+        <label for="aiEquipmentText">Describe los equipos con tus palabras y deja que la IA llene la tabla</label>
+        <textarea id="aiEquipmentText" rows="3" placeholder="Ej: tiene una nevera grande, dos bombillos en la sala, un televisor que usa en las noches, y una bomba de agua que enciende una hora al día..."></textarea>
+        <div class="actions" style="margin-top:8px; margin-bottom:0;">
+          <button class="secondary" id="aiExtractBtn" type="button">Analizar con IA</button>
+        </div>
+        <p class="note" id="aiExtractStatus" style="margin-top:8px;"></p>
+      </div>
+    </section>
+
     <section class="card">
       <h2 class="section-title">Resultado del dimensionamiento</h2>
 
@@ -1006,6 +1009,23 @@
     }
     const unitPrice = PRICE_LIST[modelKey] || 0;
     return { qty, modelKey, unitPrice, total: unitPrice * qty, totalKwh: qty * battKwh };
+  }
+
+  // Prueba todas las capacidades de batería disponibles para ese voltaje y se queda con la
+  // combinación de menor costo TOTAL (precio unitario × cantidad necesaria) que cubra bankKwh —
+  // no siempre es la de menor capacidad unitaria, porque a veces salen más baratas varias
+  // baterías chicas que pocas grandes, o viceversa, según cómo esté cada precio.
+  function findCheapestBattery(bankKwh, voltage){
+    const options = BATTERY_OPTIONS_BY_VOLTAGE[voltage] || BATTERY_OPTIONS_BY_VOLTAGE[48];
+    let best = null;
+    options.forEach(battKwh => {
+      const result = calcManualBattery(bankKwh, voltage, battKwh);
+      if(!result.unitPrice) return; // sin precio en la lista, no se puede comparar — se descarta
+      if(!best || result.total < best.total || (result.total === best.total && result.qty < best.qty)){
+        best = { ...result, battKwh };
+      }
+    });
+    return best || calcManualBattery(bankKwh, voltage, options[options.length-1]);
   }
 
   // Configuración de strings por inversor: FOC arma series cortas y las suma en paralelo (caja N in 1 out);
@@ -1555,8 +1575,12 @@
 
     const manualInverterW = manualSelectionCheck.checked ? parseInt(document.getElementById('manualInverterW').value,10) : null;
     const optimized = findOptimizedSolution(numPanels, manualInverterW, rawInverterW);
-    const autoBattery = calcManualBattery(bankKwh, voltage, battKwh);
-    const optimizedBattery = manualBatteryQty>0 ? {...autoBattery, qty:manualBatteryQty, totalKwh:manualBatteryQty*battKwh, total:autoBattery.unitPrice*manualBatteryQty} : autoBattery;
+    const optimizedBattery = manualBatteryQty>0
+      ? (() => {
+          const manualResult = calcManualBattery(bankKwh, voltage, battKwh);
+          return { ...manualResult, qty: manualBatteryQty, totalKwh: manualBatteryQty*battKwh, total: manualResult.unitPrice*manualBatteryQty };
+        })()
+      : findCheapestBattery(bankKwh, voltage);
     renderOptimizedCard(optimized, panelW, optimizedBattery, dailyWh, {peakLoadW, manual:manualSelectionCheck.checked, manualInverterW, bankKwh, hsp, eff});
     window.__currentOptimizedResult = optimized;
     window.__currentOptimizedBattery = optimizedBattery;
