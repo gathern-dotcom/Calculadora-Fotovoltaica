@@ -144,9 +144,9 @@ export default function Home() {
     const kitResult = recommendKit(fvPowerNeeded, bankKwh, inverterW);
     const kitPricing = kitResult?.kit ? calcKitPricing(kitResult.kit) : null;
 
-    // 2. Sistema Optimizado
+    // 2. Sistema Optimizado (Corregido a numPaneles)
     const manualW = siteParams.manualSelection ? siteParams.manualInverterW : null;
-    const optimized = findOptimizedSolution(numPanels, manualW, rawInverterW);
+    const optimized = findOptimizedSolution(numPaneles, manualW, rawInverterW);
     const batteryOpt =
       siteParams.manualBatteryQty > 0
         ? (() => {
