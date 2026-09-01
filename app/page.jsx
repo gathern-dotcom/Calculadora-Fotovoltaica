@@ -147,7 +147,7 @@ export default function Home() {
     // 2. Sistema Optimizado (Corregido a numPaneles)
     const manualW = siteParams.manualSelection ? siteParams.manualInverterW : null;
     const optimized = findOptimizedSolution(numPaneles, manualW, rawInverterW);
-    const batteryOpt =
+    const batteryOpt = 
       siteParams.manualBatteryQty > 0
         ? (() => {
             const manualResult = calcManualBattery(bankKwh, voltage, battKwh);
