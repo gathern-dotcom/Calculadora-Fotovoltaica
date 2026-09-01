@@ -50,7 +50,6 @@ export default function Home() {
     battKwh: 11,
     autonomyHours: 14,
     voltageOverride: 'auto',
-    voltage: 48,
     showAdvanced: false,
     hsp: 3.6,
     efficiency: 0.85,
@@ -215,6 +214,7 @@ export default function Home() {
         ubicacion: projectMeta.ubicacion || null,
         parametros: {
           ...siteParams,
+          voltage: calculationData.calculo.voltage,
           instalacion: projectInstallParams,
           tarifas: businessParams
         },
@@ -277,7 +277,10 @@ export default function Home() {
       niu: projectMeta.niu,
       ubicacion: projectMeta.ubicacion,
       fecha: new Date().toISOString(),
-      siteParams,
+      siteParams: {
+        ...siteParams,
+        voltage: calculationData.calculo.voltage
+      },
       equipos: appliances,
       calculo: calculationData.calculo,
       kitRecomendado: calculationData.kitResult,
@@ -310,7 +313,6 @@ export default function Home() {
       battKwh: 11,
       autonomyHours: 14,
       voltageOverride: 'auto',
-      voltage: 48,
       showAdvanced: false,
       hsp: 3.6,
       efficiency: 0.85,
@@ -360,7 +362,10 @@ export default function Home() {
       <main className="flex-1">
         {activeTab === 'dimensionador' && (
           <DimensionadorTab
-            siteParams={siteParams}
+            siteParams={{
+              ...siteParams,
+              voltage: calculationData.calculo.voltage
+            }}
             setSiteParams={setSiteParams}
             appliances={appliances}
             setAppliances={setAppliances}
