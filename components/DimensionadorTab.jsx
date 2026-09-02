@@ -22,6 +22,8 @@ export default function DimensionadorTab({
   onExportJson,
   onReset,
   saveStatus,
+  advisories = [],
+  onToggleAdvisory,
   onOpenCommercialCard,
   onOpenViability
 }) {
@@ -279,16 +281,14 @@ export default function DimensionadorTab({
               >
                 {siteParams.voltage === 24 ? (
                   <>
-                    <option value="2.5">2.5 kWh</option>
-                    <option value="2.9">2.9 kWh</option>
-                    <option value="4">4.0 kWh</option>
+                    <option value="2.56">LP200AH (2.56 kWh · 12.8V)</option>
+                    <option value="3.84">LP300AH (3.84 kWh · 12.8V)</option>
                   </>
                 ) : (
                   <>
-                    <option value="10">10 kWh</option>
-                    <option value="11">11 kWh</option>
-                    <option value="15">15 kWh</option>
-                    <option value="16">16 kWh</option>
+                    <option value="5.12">LC100 (5.12 kWh · 51.2V)</option>
+                    <option value="11.78">LC230 (11.78 kWh · 51.2V)</option>
+                    <option value="16.08">LC300 (16.08 kWh · 51.2V)</option>
                   </>
                 )}
               </select>
@@ -353,14 +353,14 @@ export default function DimensionadorTab({
                       min="1"
                       value={siteParams.hsp}
                       onChange={e =>
-                        setSiteParams(p => ({ ...p, hsp: parseFloat(e.target.value) || 3.6 }))
+                        setSiteParams(p => ({ ...p, hsp: parseFloat(e.target.value) || 3.8 }))
                       }
                     />
                   </div>
                   <div className="field-row">
                     <label>
                       Eficiencia global del sistema
-                      <span className="hint">Pérdidas por inversor, cableado y temperatura</span>
+                      <span className="hint">Pérdidas térmicas, MPPT, ciclado litio y cableado</span>
                     </label>
                     <select
                       value={siteParams.efficiency}
@@ -368,15 +368,15 @@ export default function DimensionadorTab({
                         setSiteParams(p => ({ ...p, efficiency: parseFloat(e.target.value) }))
                       }
                     >
-                      <option value="0.90">90% — instalación óptima</option>
-                      <option value="0.85">85% — instalación típica</option>
-                      <option value="0.80">80% — instalación con pérdidas altas</option>
+                      <option value="0.85">85% — óptima teórica</option>
+                      <option value="0.78">78% — aislada real en clima cálido (Recomendada)</option>
+                      <option value="0.72">72% — pérdidas altas / alta nubosidad</option>
                     </select>
                   </div>
                   <div className="field-row">
                     <label>
                       Química de batería (DoD)
-                      <span className="hint">Nuestro catálogo usa LFP</span>
+                      <span className="hint">Catálogo Sinergy usa LFP certificado a ≥95%</span>
                     </label>
                     <select
                       value={siteParams.dod}
@@ -384,9 +384,9 @@ export default function DimensionadorTab({
                         setSiteParams(p => ({ ...p, dod: parseFloat(e.target.value) }))
                       }
                     >
-                      <option value="0.9">Litio LFP (DoD 90%)</option>
-                      <option value="0.8">AGM/Gel (DoD 80%)</option>
-                      <option value="0.5">Plomo-ácido (DoD 50%)</option>
+                      <option value="0.95">Litio LFP (95% DoD Datasheet)</option>
+                      <option value="0.90">Litio LFP (90% DoD Conservador)</option>
+                      <option value="0.80">AGM/Gel (80% DoD)</option>
                     </select>
                   </div>
                   <div className="field-row">
@@ -567,8 +567,74 @@ export default function DimensionadorTab({
         </div>
       </main>
 
-      {/* SECCIÓN INFERIOR: PROPUESTAS Y ACCIONES */}
+      {/* SECCIÓN INFERIOR: ASESOR DE INGENIERÍA, PROPUESTAS Y ACCIONES */}
       <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-8 space-y-5">
+        
+        {/* ASESOR DE INGENIERÍA EN VIVO (OBSERVACIONES TÉCNICAS INTERACTIVAS) */}
+        {advisories && advisories.length > 0 && (
+          <section className="card border border-brand-blue/30 bg-blue-50/30">
+            <div className="flex flex-wrap items-center justify-between border-b border-blue-100 pb-3 mb-3 gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🔍</span>
+                <h2 className="text-xs uppercase font-bold text-brand-blue tracking-wider m-0">
+                  Observaciones y Recomendaciones de Ingeniería (Sinergy Advisor)
+                </h2>
+              </div>
+              <span className="text-[11px] font-mono font-semibold text-brand-blue bg-white border border-blue-100 px-2.5 py-0.5 rounded">
+                {advisories.filter(a => a.aplicado).length} de {advisories.length} aplicadas
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {advisories.map(adv => (
+                <div
+                  key={adv.id}
+                  className={`p-4 rounded-lg border transition-all ${
+                    adv.aplicado
+                      ? 'bg-white border-brand-success shadow-xs'
+                      : 'bg-white border-orange-200'
+                  }`}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
+                    <div>
+                      <span
+                        className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded ${
+                          adv.aplicado ? 'bg-green-100 text-brand-success' : 'bg-orange-100 text-brand-orange'
+                        }`}
+                      >
+                        {adv.aplicado ? '✓ Recomendación Aplicada a la Cotización' : '⚠ Sugerencia de Confiabilidad'}
+                      </span>
+                      <h3 className="text-sm font-semibold text-brand-text mt-1 m-0">
+                        {adv.titulo}
+                      </h3>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onToggleAdvisory(adv.id)}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-md cursor-pointer transition-colors ${
+                        adv.aplicado
+                          ? 'bg-gray-100 hover:bg-gray-200 text-brand-muted border border-border'
+                          : 'bg-brand-blue hover:bg-brand-blue-dark text-white'
+                      }`}
+                    >
+                      {adv.aplicado ? '↩ Revertir a propuesta estándar' : '✓ Aplicar recomendación de ingeniería'}
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-brand-text leading-relaxed m-0 mb-2.5">
+                    {adv.explicacionComercial}
+                  </p>
+
+                  <div className="bg-blue-50/50 border-l-2 border-brand-blue p-2.5 rounded text-[11.5px] text-brand-text">
+                    <strong>Argumento para el cliente:</strong> {adv.argumentoVenta}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           
           {/* Kit Recomendado */}
