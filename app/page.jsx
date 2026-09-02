@@ -25,7 +25,8 @@ import {
   calcManualBattery,
   findCheapestBattery,
   calcInstallCost,
-  calcProjectTotals
+  calcProjectTotals,
+  generateEngineeringAdvisories
 } from '../lib/solar-engine';
 
 import { supabase } from '../lib/supabase';
@@ -47,13 +48,13 @@ export default function Home() {
     kwhMonth: 0,
     useTableSum: false,
     panelW: 625,
-    battKwh: 11,
+    battKwh: 11.78,
     autonomyHours: 14,
     voltageOverride: 'auto',
     showAdvanced: false,
-    hsp: 3.6,
-    efficiency: 0.85,
-    dod: 0.9,
+    hsp: 3.8, // Calibrado a radiación promedio en zonas llanas/cálidas
+    efficiency: 0.78, // Performance Ratio real aislado con litio
+    dod: 0.95, // DoD certificado en ficha técnica LFP
     safetyFactor: 1.25,
     manualSelection: false,
     manualInverterW: 5000,
@@ -72,6 +73,13 @@ export default function Home() {
   const [isViabilityOpen, setIsViabilityOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
 
+  // Estado: Recomendaciones de Ingeniería aplicadas interactivamente por el asesor
+  const [appliedAdvisories, setAppliedAdvisories] = useState({});
+
+  const handleToggleAdvisory = advisoryId => {
+    setAppliedAdvisories(prev => ({ ...prev, [advisoryId]: !prev[advisoryId] }));
+  };
+
   // ==================== MOTOR DE CÁLCULO REACTIVO ====================
   const calculationData = useMemo(() => {
     let dailyWh = 0;
@@ -89,29 +97,30 @@ export default function Home() {
       dailyWh = ((parseFloat(siteParams.kwhMonth) || 0) * 1000) / 30;
     }
 
-    const hsp = siteParams.hsp || 3.6;
-    const eff = siteParams.efficiency || 0.85;
-    const dod = siteParams.dod || 0.9;
+    const hsp = siteParams.hsp || 3.8;
+    const eff = siteParams.efficiency || 0.78;
+    const dod = siteParams.dod || 0.95;
     const panelW = siteParams.panelW || 625;
     const safety = siteParams.safetyFactor || 1.25;
 
     const adjustedWh = eff > 0 ? dailyWh / eff : 0;
     const fvPowerNeeded = hsp > 0 ? adjustedWh / hsp : 0;
-    const numPaneles = panelW > 0 ? Math.ceil(fvPowerNeeded / panelW) : 0;
+    let numPaneles = panelW > 0 ? Math.ceil(fvPowerNeeded / panelW) : 0;
 
-    const rawInverterW = peakLoadW * safety;
+    // Inversor base según carga continua y potencia fotovoltaica
     const INVERTER_SIZES = [3000, 5000, 6400, 8000, 10000, 12000, 15000];
+    const rawInverterW = peakLoadW * safety;
     const standardFromLoad =
       INVERTER_SIZES.find(size => size >= rawInverterW) ||
       INVERTER_SIZES[INVERTER_SIZES.length - 1];
 
     const INVERTER_PV_CAPACITY = [
-      { w: 3000, maxKwp: 2.5 },
-      { w: 5000, maxKwp: 6.25 },
-      { w: 6400, maxKwp: 7.5 },
-      { w: 8000, maxKwp: 12 },
-      { w: 10000, maxKwp: 15 },
-      { w: 12000, maxKwp: 18 },
+      { w: 3000, maxKwp: 3.2 },
+      { w: 5000, maxKwp: 6.4 },
+      { w: 6400, maxKwp: 6.4 },
+      { w: 8000, maxKwp: 12.0 },
+      { w: 10000, maxKwp: 15.0 },
+      { w: 12000, maxKwp: 18.0 },
       { w: 15000, maxKwp: 22.5 }
     ];
     const fvKwp = fvPowerNeeded / 1000;
@@ -120,7 +129,14 @@ export default function Home() {
       INVERTER_PV_CAPACITY[INVERTER_PV_CAPACITY.length - 1]
     ).w;
 
-    const inverterW = Math.max(standardFromLoad, standardFromPV);
+    let inverterW = Math.max(standardFromLoad, standardFromPV);
+
+    // Si el asesor hizo clic en "Aplicar recomendación de motor", se actualiza dinámicamente
+    if (appliedAdvisories['motor-inrush']) {
+      const upgradeInv = inverterW <= 3000 ? 5000 : inverterW <= 5000 ? 6400 : 8000;
+      inverterW = Math.max(inverterW, upgradeInv);
+    }
+
     const voltage =
       siteParams.voltageOverride === 'auto'
         ? inverterW <= 4000
@@ -132,25 +148,32 @@ export default function Home() {
     const bankWh = dod > 0 ? (dailyWh * autonomyDays) / dod : 0;
     const bankKwh = bankWh / 1000;
 
-    const battKwh = siteParams.battKwh || (voltage === 24 ? 2.9 : 11);
-    const numBatteries =
+    const battKwh = siteParams.battKwh || (voltage === 24 ? 2.56 : 11.78);
+    let numBatteries =
       siteParams.manualBatteryQty > 0
         ? siteParams.manualBatteryQty
         : battKwh > 0
         ? Math.ceil(bankKwh / battKwh)
         : 0;
 
+    // Si se aplicó la recomendación de tasa C de batería
+    if (appliedAdvisories['battery-crate'] && voltage === 48) {
+      const kwPerPack = battKwh >= 15 ? 8.0 : 5.0;
+      const minReqPower = Math.ceil(inverterW / 1000 / kwPerPack);
+      numBatteries = Math.max(numBatteries, minReqPower);
+    }
+
     // 1. Kit Recomendado
     const kitResult = recommendKit(fvPowerNeeded, bankKwh, inverterW);
     const kitPricing = kitResult?.kit ? calcKitPricing(kitResult.kit) : null;
 
-    // 2. Sistema Optimizado (Corregido a numPaneles)
+    // 2. Sistema Optimizado
     const manualW = siteParams.manualSelection ? siteParams.manualInverterW : null;
-    const optimized = findOptimizedSolution(numPaneles, manualW, rawInverterW);
-    const batteryOpt = 
+    const optimized = findOptimizedSolution(numPaneles, manualW, inverterW);
+    const batteryOpt =
       siteParams.manualBatteryQty > 0
         ? (() => {
-            const manualResult = calcManualBattery(bankKwh, voltage, battKwh);
+            const manualResult = calcManualBattery(bankKwh, voltage, battKwh, inverterW);
             return {
               ...manualResult,
               qty: siteParams.manualBatteryQty,
@@ -158,7 +181,7 @@ export default function Home() {
               total: manualResult.unitPrice * siteParams.manualBatteryQty
             };
           })()
-        : findCheapestBattery(bankKwh, voltage);
+        : findCheapestBattery(bankKwh, voltage, inverterW);
 
     let optimizedPricing = null;
     let optimizedBOM = null;
@@ -180,7 +203,16 @@ export default function Home() {
       businessParams
     );
 
+    // 4. Generación de Observaciones de Ingeniería en Vivo
+    const advisories = generateEngineeringAdvisories(
+      appliances,
+      { voltage, numBatteries, battKwh, numPaneles, dailyWh },
+      inverterW,
+      appliedAdvisories
+    );
+
     return {
+      advisories,
       calculo: {
         dailyWh,
         peakLoadW,
@@ -199,7 +231,7 @@ export default function Home() {
       installResult,
       projectTotals
     };
-  }, [appliances, siteParams, projectInstallParams, businessParams]);
+  }, [appliances, siteParams, projectInstallParams, businessParams, appliedAdvisories]);
 
   // Guardar en Supabase
   const handleSaveCloud = async () => {
@@ -286,7 +318,8 @@ export default function Home() {
       kitRecomendado: calculationData.kitResult,
       sistemaOptimizado: calculationData.optimizedResult,
       instalacion: calculationData.installResult,
-      totales: calculationData.projectTotals
+      totales: calculationData.projectTotals,
+      asesorias_aplicadas: appliedAdvisories
     };
 
     const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
@@ -310,18 +343,19 @@ export default function Home() {
       kwhMonth: 0,
       useTableSum: false,
       panelW: 625,
-      battKwh: 11,
+      battKwh: 11.78,
       autonomyHours: 14,
       voltageOverride: 'auto',
       showAdvanced: false,
-      hsp: 3.6,
-      efficiency: 0.85,
-      dod: 0.9,
+      hsp: 3.8,
+      efficiency: 0.78,
+      dod: 0.95,
       safetyFactor: 1.25,
       manualSelection: false,
       manualInverterW: 5000,
       manualBatteryQty: 0
     });
+    setAppliedAdvisories({});
     setSaveStatus(null);
   };
 
@@ -378,6 +412,8 @@ export default function Home() {
             onExportJson={handleExportJson}
             onReset={handleReset}
             saveStatus={saveStatus}
+            advisories={calculationData.advisories}
+            onToggleAdvisory={handleToggleAdvisory}
             onOpenCommercialCard={() => setIsCommercialCardOpen(true)}
             onOpenViability={() => setIsViabilityOpen(true)}
           />
