@@ -5,13 +5,15 @@
 
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req) {
   try {
     const { text } = await req.json();
 
     if (!text || typeof text !== 'string' || !text.trim()) {
       return NextResponse.json(
-        { error: 'Falta el texto de descripción de los equipos a analizar.' },
+        { error: 'Escribe una descripción de los equipos primero.' },
         { status: 400 }
       );
     }
@@ -23,7 +25,7 @@ export async function POST(req) {
       return NextResponse.json(
         {
           error:
-            'No hay ninguna clave de API configurada. Configura GEMINI_API_KEY o DEEPSEEK_API_KEY en Vercel/entorno.'
+            'No se encontró la variable GEMINI_API_KEY en Vercel. Agrégala en Settings -> Environment Variables y haz Redeploy.'
         },
         { status: 500 }
       );
@@ -71,21 +73,23 @@ REGLAS:
 
     let geminiError = null;
 
-    // 1. INTENTAR CON GEMINI
+    // 1. INTENTO CON GEMINI (Modelos: gemini-1.5-flash y gemini-2.0-flash)
     if (geminiKey) {
-      try {
-        const geminiResult = await llamarGemini(prompt, geminiKey);
-        const validados = validarEquipos(geminiResult);
-        if (validados && validados.length > 0) {
-          return NextResponse.json({
-            equipos: validados,
-            proveedor: 'gemini'
-          });
+      const modelsToTry = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+      for (const model of modelsToTry) {
+        try {
+          const geminiResult = await llamarGemini(prompt, geminiKey, model);
+          const validados = validarEquipos(geminiResult);
+          if (validados && validados.length > 0) {
+            return NextResponse.json({
+              equipos: validados,
+              proveedor: `gemini (${model})`
+            });
+          }
+        } catch (err) {
+          geminiError = err.message;
+          console.error(`Gemini (${model}) falló:`, err.message);
         }
-        geminiError = 'Gemini devolvió una lista vacía o formato inválido.';
-      } catch (err) {
-        geminiError = err.message;
-        console.error('Gemini API Error:', err);
       }
     }
 
@@ -103,12 +107,10 @@ REGLAS:
           });
         }
       } catch (err) {
-        console.error('DeepSeek API Error:', err);
+        console.error('DeepSeek falló:', err.message);
         return NextResponse.json(
           {
-            error: 'Falló el análisis con Gemini y DeepSeek.',
-            gemini_error: geminiError,
-            deepseek_error: err.message
+            error: `Gemini falló (${geminiError}). DeepSeek falló (${err.message}).`
           },
           { status: 502 }
         );
@@ -117,8 +119,7 @@ REGLAS:
 
     return NextResponse.json(
       {
-        error: 'No se pudo procesar la solicitud con los proveedores de IA disponibles.',
-        gemini_error: geminiError
+        error: `Gemini falló: ${geminiError || 'Revisa tu clave de API en Vercel.'}`
       },
       { status: 502 }
     );
@@ -130,8 +131,7 @@ REGLAS:
   }
 }
 
-async function llamarGemini(prompt, apiKey) {
-  const model = 'gemini-1.5-flash';
+async function llamarGemini(prompt, apiKey, model = 'gemini-1.5-flash') {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const controller = new AbortController();
@@ -152,7 +152,7 @@ async function llamarGemini(prompt, apiKey) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Gemini HTTP ${response.status}: ${errorText}`);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
@@ -189,7 +189,7 @@ async function llamarDeepSeek(prompt, apiKey) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`DeepSeek HTTP ${response.status}: ${errorText}`);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
@@ -226,7 +226,7 @@ function extraerJSON(text) {
     if (startArr !== -1 && endArr > startArr) {
       return JSON.parse(limpio.substring(startArr, endArr + 1));
     }
-    throw new Error('No se pudo extraer una estructura JSON válida de la respuesta.');
+    throw new Error('No se pudo extraer JSON de la respuesta.');
   }
 }
 
@@ -254,6 +254,9 @@ function validarEquipos(equipos) {
 
       let horas = Number(eq.horas_dia);
       if (!Number.isFinite(horas) || horas < 0) horas = 0;
+      if (horas > 24) horas = 24;
+
+0) horas = 0;
       if (horas > 24) horas = 24;
 
       return {
