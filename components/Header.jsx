@@ -1,30 +1,38 @@
 'use client';
 
-import { SINERGY_LOGO } from '../lib/constants';
-
 export default function Header({ projectMeta, setProjectMeta }) {
   const handleChange = (field, value) => {
     setProjectMeta(prev => ({ ...prev, [field]: value }));
   };
 
   return (
-    <header className="border-b border-border bg-white px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+    <header className="border-b border-border bg-white px-6 py-4 flex flex-wrap items-baseline justify-between gap-4">
       <div className="flex items-center gap-3">
+        {/* Intenta cargar el archivo de logo si está en public/, o muestra el emblema limpio */}
         <img
-          src={SINERGY_LOGO}
+          src="/logo-sinergy.webp"
           alt="Sinergy Soluciones Integrales"
           className="h-10 w-auto block object-contain"
+          onError={e => {
+            e.currentTarget.style.display = 'none';
+            if (e.currentTarget.nextElementSibling) {
+              e.currentTarget.nextElementSibling.style.display = 'flex';
+            }
+          }}
         />
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold tracking-tight text-brand-blue font-sans">
-              ☀ Dimensionador FV
-            </h1>
-            <span className="text-[11px] font-mono bg-blue-50 text-brand-blue px-2 py-0.5 rounded border border-blue-100 font-semibold">
-              SISTEMA AISLADO / OFF-GRID
-            </span>
+        <div style={{ display: 'none' }} className="items-center gap-2">
+          <div className="h-9 w-9 bg-brand-blue rounded-lg flex items-center justify-center text-white font-bold text-base shadow-xs">
+            ☀
           </div>
-          <p className="text-xs text-brand-muted font-mono">Sinergy Soluciones Integrales</p>
+        </div>
+
+        <div className="flex items-baseline gap-2">
+          <h1 className="text-[19px] font-semibold text-brand-text tracking-wide m-0">
+            ☀ Dimensionador FV
+          </h1>
+          <span className="text-[12px] text-brand-muted font-mono tracking-wider uppercase">
+            SISTEMA AISLADO / OFF-GRID
+          </span>
         </div>
       </div>
 
@@ -34,35 +42,35 @@ export default function Header({ projectMeta, setProjectMeta }) {
           placeholder="Nombre del cliente…"
           value={projectMeta.cliente}
           onChange={e => handleChange('cliente', e.target.value)}
-          className="bg-transparent border-b border-dashed border-border px-2 py-1 text-xs font-mono focus:outline-none focus:border-brand-blue min-w-[170px]"
+          className="bg-transparent border-0 border-b border-dashed border-border px-1 py-1 text-sm font-mono text-brand-text focus:outline-none focus:border-brand-blue min-w-[170px]"
         />
         <input
           type="text"
           placeholder="Teléfono…"
           value={projectMeta.telefono}
           onChange={e => handleChange('telefono', e.target.value)}
-          className="bg-transparent border-b border-dashed border-border px-2 py-1 text-xs font-mono focus:outline-none focus:border-brand-blue min-w-[120px]"
+          className="bg-transparent border-0 border-b border-dashed border-border px-1 py-1 text-sm font-mono text-brand-text focus:outline-none focus:border-brand-blue min-w-[120px]"
         />
         <input
           type="text"
           placeholder="Cédula…"
           value={projectMeta.cedula}
           onChange={e => handleChange('cedula', e.target.value)}
-          className="bg-transparent border-b border-dashed border-border px-2 py-1 text-xs font-mono focus:outline-none focus:border-brand-blue min-w-[120px]"
+          className="bg-transparent border-0 border-b border-dashed border-border px-1 py-1 text-sm font-mono text-brand-text focus:outline-none focus:border-brand-blue min-w-[120px]"
         />
         <input
           type="text"
           placeholder="NIU / Código…"
           value={projectMeta.niu}
           onChange={e => handleChange('niu', e.target.value)}
-          className="bg-transparent border-b border-dashed border-border px-2 py-1 text-xs font-mono focus:outline-none focus:border-brand-blue min-w-[130px]"
+          className="bg-transparent border-0 border-b border-dashed border-border px-1 py-1 text-sm font-mono text-brand-text focus:outline-none focus:border-brand-blue min-w-[130px]"
         />
         <input
           type="text"
-          placeholder="Ubicación / Municipio…"
+          placeholder="Ubicación…"
           value={projectMeta.ubicacion}
           onChange={e => handleChange('ubicacion', e.target.value)}
-          className="bg-transparent border-b border-dashed border-border px-2 py-1 text-xs font-mono focus:outline-none focus:border-brand-blue min-w-[160px]"
+          className="bg-transparent border-0 border-b border-dashed border-border px-1 py-1 text-sm font-mono text-brand-text focus:outline-none focus:border-brand-blue min-w-[150px]"
         />
       </div>
     </header>
