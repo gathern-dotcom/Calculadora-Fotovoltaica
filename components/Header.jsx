@@ -1,5 +1,7 @@
 'use client';
 
+import { SINERGY_LOGO } from '../lib/constants';
+
 export default function Header({ projectMeta, setProjectMeta }) {
   const handleChange = (field, value) => {
     setProjectMeta(prev => ({ ...prev, [field]: value }));
@@ -8,16 +10,18 @@ export default function Header({ projectMeta, setProjectMeta }) {
   return (
     <header className="border-b border-border bg-white px-6 py-4 flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 bg-brand-blue rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">
-          ☀
-        </div>
+        <img
+          src={SINERGY_LOGO}
+          alt="Sinergy Soluciones Integrales"
+          className="h-10 w-auto block object-contain"
+        />
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold tracking-tight text-brand-blue">
-              Dimensionador FV
+            <h1 className="text-lg font-bold tracking-tight text-brand-blue font-sans">
+              ☀ Dimensionador FV
             </h1>
             <span className="text-[11px] font-mono bg-blue-50 text-brand-blue px-2 py-0.5 rounded border border-blue-100 font-semibold">
-              OFF-GRID
+              SISTEMA AISLADO / OFF-GRID
             </span>
           </div>
           <p className="text-xs text-brand-muted font-mono">Sinergy Soluciones Integrales</p>
