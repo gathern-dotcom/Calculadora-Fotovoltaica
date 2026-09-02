@@ -1,36 +1,56 @@
 'use client';
 
+import { useState } from 'react';
+
 export default function Header({ projectMeta, setProjectMeta }) {
+  const [logoError, setLogoError] = useState(false);
+
   const handleChange = (field, value) => {
     setProjectMeta(prev => ({ ...prev, [field]: value }));
   };
 
   return (
-    <header className="border-b border-border bg-white px-6 py-4 flex flex-wrap items-baseline justify-between gap-4">
+    <header className="border-b border-border bg-white px-6 py-4 flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3">
-        {/* Intenta cargar el archivo de logo si está en public/, o muestra el emblema limpio */}
-        <img
-          src="/logo-sinergy.webp"
-          alt="Sinergy Soluciones Integrales"
-          className="h-10 w-auto block object-contain"
-          onError={e => {
-            e.currentTarget.style.display = 'none';
-            if (e.currentTarget.nextElementSibling) {
-              e.currentTarget.nextElementSibling.style.display = 'flex';
-            }
-          }}
-        />
-        <div style={{ display: 'none' }} className="items-center gap-2">
-          <div className="h-9 w-9 bg-brand-blue rounded-lg flex items-center justify-center text-white font-bold text-base shadow-xs">
-            ☀
+        {/* Si existe /logo-sinergy.webp lo muestra; si no, muestra el logo vectorial Sinergy con Century Gothic */}
+        {!logoError ? (
+          <img
+            src="/logo-sinergy.webp"
+            alt="Sinergy Soluciones Integrales"
+            className="h-10 w-auto block object-contain"
+            onError={() => setLogoError(true)}
+          />
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <div className="h-10 w-10 bg-brand-blue rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-xs">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5" fill="#FFE600" stroke="#FF8000" />
+                <line x1="12" y1="1" x2="12" y2="3" stroke="#FF8000" />
+                <line x1="12" y1="21" x2="12" y2="23" stroke="#FF8000" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="#FF8000" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="#FF8000" />
+                <line x1="1" y1="12" x2="3" y2="12" stroke="#FF8000" />
+                <line x1="21" y1="12" x2="23" y2="12" stroke="#FF8000" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="#FF8000" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="#FF8000" />
+              </svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[17px] font-bold text-brand-blue tracking-tight leading-none font-sans">
+                SINERGY
+              </span>
+              <span className="text-[9.5px] tracking-widest text-brand-muted font-bold uppercase mt-0.5 font-sans">
+                SOLUCIONES INTEGRALES
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex items-baseline gap-2">
-          <h1 className="text-[19px] font-semibold text-brand-text tracking-wide m-0">
+        <div className="flex items-baseline gap-2 pl-3 border-l border-border">
+          <h1 className="text-[19px] font-semibold text-brand-text tracking-wide m-0 font-sans">
             ☀ Dimensionador FV
           </h1>
-          <span className="text-[12px] text-brand-muted font-mono tracking-wider uppercase">
+          <span className="text-[11px] text-brand-muted font-mono tracking-wider uppercase">
             SISTEMA AISLADO / OFF-GRID
           </span>
         </div>
