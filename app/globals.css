@@ -7,20 +7,195 @@
   --panel: #F5F6F7;
   --panel-2: #FFFFFF;
   --border: #DCDDE0;
-  --amber: #0040CC;
+  --amber: #0040CC; /* Azul Corporativo Principal */
   --amber-dim: #002F99;
-  --green: #FF8000;
-  --text: #4D4D4D;
-  --muted: #8C8C8C;
+  --green: #FF8000; /* Naranja Corporativo Secundario */
+  --text: #4D4D4D; /* Gris Corporativo Texto */
+  --muted: #8C8C8C; /* Gris Neutro Secundario */
   --danger: #CC5200;
   --success: #149E60;
-  --highlight: #FFE600;
+  --radius: 10px;
+  --highlight: #FFE600; /* Amarillo Acento */
 }
 
-body {
-  font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Segoe UI', sans-serif;
-  color: var(--text);
+/* APLICAR CENTURY GOTHIC A TODOS LOS ELEMENTOS SIN EXCEPCIÓN */
+*, html, body, input, select, textarea, button, p, span, h1, h2, h3, h4, h5, h6, table, th, td, label, div, a, .mono, .font-mono {
+  font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
   background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Títulos de sección con el recuadro azul Sinergy */
+h2.section-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+h2.section-title::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--amber);
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* Tarjetas */
+section.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+/* Filas de formulario */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.field-row label {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.field-row .hint {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  font-weight: normal;
+}
+
+input[type=number], input[type=text], select, textarea {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-size: 13px;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--amber) !important;
+  outline-offset: 1px;
+  border-color: var(--amber) !important;
+}
+
+/* Tarjetas KPI */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 520px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kpi {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--amber);
+}
+
+.kpi.battery::before {
+  background: var(--green);
+}
+
+.kpi .kpi-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.kpi .kpi-value {
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.kpi .kpi-value .unit {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.kpi .kpi-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Tarjetas de Kit y Sistema Optimizado */
+.kit-card {
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(0, 64, 204, 0.08), transparent 60%);
+  padding: 16px 18px;
+}
+
+.kit-card.warn {
+  border-color: var(--danger);
+  background: linear-gradient(180deg, rgba(204, 82, 0, 0.08), transparent 60%);
+}
+
+.kit-specs li {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.kit-specs li span.k {
+  color: var(--muted);
+}
+
+.kit-specs li span.v {
+  font-weight: 600;
 }
 
 /* Animaciones SVG del Esquema */
@@ -43,6 +218,10 @@ body {
 #bulbBody {
   animation: bulbBodyPulse 2.2s ease-in-out infinite;
   transform-origin: 550px 55px;
+}
+
+#bulbFilament {
+  animation: bulbFilamentPulse 2.2s ease-in-out infinite;
 }
 
 @keyframes bulbGlowPulse {
@@ -69,9 +248,20 @@ body {
   }
 }
 
-#sunGroup {
+@keyframes bulbFilamentPulse {
+  0%, 100% {
+    stroke: #8C8C8C;
+    opacity: 0.6;
+  }
+  50% {
+    stroke: var(--highlight);
+    opacity: 1;
+  }
+}
+
+#sunIcon {
   transform-origin: 55px 55px;
-  animation: sunRotate 18s linear infinite;
+  animation: sunRotate 18s linear infinite, sunGlow 3s ease-in-out infinite;
 }
 
 @keyframes sunRotate {
@@ -80,5 +270,14 @@ body {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes sunGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 0px var(--amber));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px var(--amber));
   }
 }
