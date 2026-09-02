@@ -256,9 +256,6 @@ function validarEquipos(equipos) {
       if (!Number.isFinite(horas) || horas < 0) horas = 0;
       if (horas > 24) horas = 24;
 
-0) horas = 0;
-      if (horas > 24) horas = 24;
-
       return {
         equipo,
         hp,
