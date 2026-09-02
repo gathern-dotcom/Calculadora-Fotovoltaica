@@ -487,54 +487,79 @@ export default function DimensionadorTab({
               </div>
             </div>
 
-            {/* Esquema SVG */}
-            <div className="mt-6 pt-4 border-t border-border">
-              <svg viewBox="0 0 640 160" className="w-full h-auto max-h-36 block" xmlns="http://www.w3.org/2000/svg">
-                <line x1="95" y1="60" x2="200" y2="60" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="6 6" className="flow-dash" />
-                <line x1="255" y1="60" x2="360" y2="60" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="6 6" className="flow-dash" />
-                <line x1="415" y1="60" x2="520" y2="60" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="6 6" className="flow-dash" />
+            {/* Esquema SVG con las 5 etapas (Incluye Inversor) */}
+            <div className="mt-5 pt-4 border-t border-border">
+              <svg viewBox="0 0 700 160" className="w-full h-auto block" xmlns="http://www.w3.org/2000/svg">
+                {/* Líneas de flujo animadas */}
+                <line x1="85" y1="60" x2="162" y2="60" stroke="#C9C9C9" strokeWidth="2" className="flow-dash" />
+                <line x1="235" y1="60" x2="310" y2="60" stroke="#C9C9C9" strokeWidth="2" className="flow-dash" />
+                <line x1="380" y1="60" x2="455" y2="60" stroke="#C9C9C9" strokeWidth="2" className="flow-dash" />
+                <line x1="525" y1="60" x2="600" y2="60" stroke="#C9C9C9" strokeWidth="2" className="flow-dash" />
 
-                {/* Sol */}
-                <g id="sunGroup">
-                  <circle cx="55" cy="55" r="24" fill="#FFE600" opacity="0.85" />
-                  <circle cx="55" cy="55" r="18" fill="#FF8000" />
+                {/* 1. SOL */}
+                <g id="sunIcon">
+                  <circle cx="50" cy="55" r="26" fill="#FFE600" opacity="0.25" />
+                  <circle cx="50" cy="55" r="20" fill="#FFE600" opacity="0.6" />
+                  <circle cx="50" cy="55" r="15" fill="#FF8000" />
+                  <g stroke="#FF8000" strokeWidth="2.2" strokeLinecap="round">
+                    <line x1="50" y1="26" x2="50" y2="20" />
+                    <line x1="50" y1="84" x2="50" y2="90" />
+                    <line x1="21" y1="55" x2="15" y2="55" />
+                    <line x1="79" y1="55" x2="85" y2="55" />
+                    <line x1="29" y1="34" x2="25" y2="30" />
+                    <line x1="71" y1="76" x2="75" y2="80" />
+                    <line x1="29" y1="76" x2="25" y2="80" />
+                    <line x1="71" y1="34" x2="75" y2="30" />
+                  </g>
                 </g>
-                <text x="55" y="105" textAnchor="middle" className="text-[10px] font-mono fill-gray-500">SOL</text>
-                <text x="55" y="120" textAnchor="middle" className="text-xs font-bold font-mono fill-brand-blue">{siteParams.hsp} HSP</text>
+                <text x="50" y="105" textAnchor="middle" className="text-[11px] font-mono fill-brand-muted">SOL</text>
+                <text x="50" y="122" textAnchor="middle" className="text-[13px] font-semibold fill-brand-text">{siteParams.hsp} HSP</text>
 
-                {/* Paneles */}
+                {/* 2. PANELES */}
                 <g>
-                  <rect x="199" y="36" width="58" height="46" rx="4" fill="#F8FAFC" stroke="#0040CC" strokeWidth="1.5" />
-                  <line x1="218" y1="36" x2="218" y2="82" stroke="#CBD5E1" strokeWidth="1" />
-                  <line x1="237" y1="36" x2="237" y2="82" stroke="#CBD5E1" strokeWidth="1" />
-                  <line x1="199" y1="51" x2="257" y2="51" stroke="#CBD5E1" strokeWidth="1" />
-                  <line x1="199" y1="66" x2="257" y2="66" stroke="#CBD5E1" strokeWidth="1" />
+                  <rect x="171" y="36" width="58" height="46" rx="3" fill="#F8FAFC" stroke="#0040CC" strokeWidth="1.5" />
+                  <line x1="190.3" y1="36" x2="190.3" y2="82" stroke="#CBD5E1" strokeWidth="1" />
+                  <line x1="209.6" y1="36" x2="209.6" y2="82" stroke="#CBD5E1" strokeWidth="1" />
+                  <line x1="171" y1="50.6" x2="229" y2="50.6" stroke="#CBD5E1" strokeWidth="1" />
+                  <line x1="171" y1="65.3" x2="229" y2="65.3" stroke="#CBD5E1" strokeWidth="1" />
                 </g>
-                <text x="228" y="105" textAnchor="middle" className="text-[10px] font-mono fill-gray-500">PANELES</text>
-                <text x="228" y="120" textAnchor="middle" className="text-xs font-bold font-mono fill-brand-blue">{calculo.numPaneles} un.</text>
+                <text x="200" y="105" textAnchor="middle" className="text-[11px] font-mono fill-brand-muted">PANELES</text>
+                <text x="200" y="122" textAnchor="middle" className="text-[13px] font-semibold fill-brand-text">{calculo.numPaneles} un.</text>
 
-                {/* Baterías */}
+                {/* 3. BATERÍAS */}
                 <g>
-                  <rect x="360" y="42" width="55" height="38" rx="4" fill="#F8FAFC" stroke="#FF8000" strokeWidth="1.5" />
-                  <rect x="365" y="48" width="12" height="26" fill="#FF8000" rx="1" opacity="0.8" />
-                  <rect x="381" y="48" width="12" height="26" fill="#FF8000" rx="1" opacity="0.6" />
-                  <rect x="397" y="48" width="12" height="26" fill="#FF8000" rx="1" opacity="0.3" />
+                  <rect x="339" y="33" width="6" height="7" fill="#FF8000" />
+                  <rect x="317" y="40" width="56" height="38" rx="3" fill="#F8FAFC" stroke="#FF8000" strokeWidth="1.5" />
+                  <rect x="323" y="46" width="12" height="26" fill="#FF8000" opacity="0.85" rx="1" />
+                  <rect x="339" y="46" width="12" height="26" fill="#FF8000" opacity="0.55" rx="1" />
+                  <rect x="355" y="46" width="12" height="26" fill="#FF8000" opacity="0.3" rx="1" />
                 </g>
-                <text x="387" y="105" textAnchor="middle" className="text-[10px] font-mono fill-gray-500">BATERÍAS</text>
-                <text x="387" y="120" textAnchor="middle" className="text-xs font-bold font-mono fill-brand-orange">{calculo.numBatteries} un.</text>
+                <text x="345" y="105" textAnchor="middle" className="text-[11px] font-mono fill-brand-muted">BATERÍAS</text>
+                <text x="345" y="122" textAnchor="middle" className="text-[13px] font-semibold fill-brand-orange">{calculo.numBatteries} un.</text>
 
-                {/* Carga Bombillo */}
+                {/* 4. INVERSOR */}
                 <g>
-                  <circle cx="550" cy="55" r="16" fill="#FFF6C4" stroke="#FFE600" strokeWidth="1.5" id="bulbGlow" />
-                  <path d="M541 50a9 9 0 1 1 18 0c0 5-4 7-5 11h-8c-1-4-5-6-5-11z" fill="#FFE600" stroke="#FF8000" strokeWidth="1.2" id="bulbBody" />
+                  <rect x="462" y="36" width="56" height="46" rx="4" fill="#F8FAFC" stroke="#0040CC" strokeWidth="1.5" />
+                  <rect x="470" y="43" width="40" height="13" rx="2" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="1" />
+                  <text x="490" y="52.5" textAnchor="middle" fontSize="7.5" fontFamily="monospace" fill="#0040CC" fontWeight="bold">AC 120/240V</text>
+                  <path d="M473 68 Q479 61 485 68 T497 68" fill="none" stroke="#FF8000" strokeWidth="1.6" strokeLinecap="round" />
+                  <circle cx="508" cy="68" r="2.5" fill="#149E60" />
                 </g>
-                <text x="550" y="105" textAnchor="middle" className="text-[10px] font-mono fill-gray-500">CARGA</text>
-                <text x="550" y="120" textAnchor="middle" className="text-xs font-bold font-mono fill-brand-blue">{fmt(calculo.peakLoadW)} W</text>
+                <text x="490" y="105" textAnchor="middle" className="text-[11px] font-mono fill-brand-muted">INVERSOR</text>
+                <text x="490" y="122" textAnchor="middle" className="text-[13px] font-semibold fill-brand-blue">{fmt(calculo.inverterW)} W</text>
+
+                {/* 5. CARGA */}
+                <g id="loadBulb">
+                  <circle cx="635" cy="55" r="16" fill="none" stroke="#8C8C8C" strokeWidth="1.5" id="bulbGlow" />
+                  <path d="M626 50a9 9 0 1 1 18 0c0 5-4 7-5 11h-8c-1-4-5-6-5-11z" fill="#ECECEC" stroke="#8C8C8C" strokeWidth="1.3" id="bulbBody" />
+                  <path d="M631 55 l3 -6 l2 4 l3 -5" fill="none" stroke="#8C8C8C" strokeWidth="1" strokeLinecap="round" id="bulbFilament" />
+                  <rect x="630" y="61" width="10" height="3" rx="1" fill="#C9C9C9" />
+                  <rect x="631.5" y="64" width="7" height="2.5" rx="1" fill="#C9C9C9" />
+                </g>
+                <text x="635" y="105" textAnchor="middle" className="text-[11px] font-mono fill-brand-muted">CARGA</text>
+                <text x="635" y="122" textAnchor="middle" className="text-[13px] font-semibold fill-brand-text">{fmt(calculo.peakLoadW)} W</text>
               </svg>
             </div>
-          </section>
-        </div>
-      </div>
 
       {/* PROPUESTAS COMERCIALES: KIT CATÁLOGO VS SISTEMA OPTIMIZADO */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
