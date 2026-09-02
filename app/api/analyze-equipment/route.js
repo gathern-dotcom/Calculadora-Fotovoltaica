@@ -1,6 +1,6 @@
 // =========================================================================
 // API ROUTE: /api/analyze-equipment
-// Extracción estructurada de electrodomésticos y motores usando Gemini / DeepSeek
+// IA Principal: Google Gemini | IA Respaldo: DeepSeek
 // =========================================================================
 
 import { NextResponse } from 'next/server';
@@ -25,7 +25,7 @@ export async function POST(req) {
       return NextResponse.json(
         {
           error:
-            'No se encontró la variable GEMINI_API_KEY en Vercel. Agrégala en Settings -> Environment Variables y haz Redeploy.'
+            'No hay ninguna clave de IA configurada. Configura GEMINI_API_KEY o DEEPSEEK_API_KEY en Vercel.'
         },
         { status: 500 }
       );
@@ -73,13 +73,21 @@ REGLAS:
 
     let geminiError = null;
 
-    // 1. INTENTO CON GEMINI (Modelos: gemini-1.5-flash y gemini-2.0-flash)
+    // ========================================================
+    // 1. INTENTAR PRIMERO CON GOOGLE GEMINI
+    // ========================================================
     if (geminiKey) {
-      const modelsToTry = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
-      for (const model of modelsToTry) {
+      const candidateModels = [
+        'gemini-3.6-flash',
+        'gemini-3.1-flash-lite',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash'
+      ];
+
+      for (const model of candidateModels) {
         try {
-          const geminiResult = await llamarGemini(prompt, geminiKey, model);
-          const validados = validarEquipos(geminiResult);
+          const rawJson = await ejecutarGemini(prompt, geminiKey, model);
+          const validados = validarEquipos(rawJson);
           if (validados && validados.length > 0) {
             return NextResponse.json({
               equipos: validados,
@@ -88,38 +96,61 @@ REGLAS:
           }
         } catch (err) {
           geminiError = err.message;
-          console.error(`Gemini (${model}) falló:`, err.message);
+          // Si no es un 404, paramos el ciclo de Gemini y pasamos al respaldo
+          if (!err.message.includes('404') && !err.message.includes('not found')) {
+            break;
+          }
         }
+      }
+
+      // Si fallaron los modelos fijos por 404, consultar dinámicamente modelos activos
+      try {
+        const activeModel = await obtenerModeloActivo(geminiKey);
+        if (activeModel && !candidateModels.includes(activeModel)) {
+          const rawJson = await ejecutarGemini(prompt, geminiKey, activeModel);
+          const validados = validarEquipos(rawJson);
+          if (validados && validados.length > 0) {
+            return NextResponse.json({
+              equipos: validados,
+              proveedor: `gemini (${activeModel})`
+            });
+          }
+        }
+      } catch (e) {
+        // Ignorar y continuar hacia DeepSeek
       }
     }
 
-    // 2. FALLBACK A DEEPSEEK
+    // ========================================================
+    // 2. RESPALDO AUTOMÁTICO (FALLBACK) -> DEEPSEEK
+    // ========================================================
+    let deepseekError = null;
+
     if (deepseekKey) {
       try {
-        const deepseekResult = await llamarDeepSeek(prompt, deepseekKey);
-        const validados = validarEquipos(deepseekResult);
+        const rawJson = await llamarDeepSeek(prompt, deepseekKey);
+        const validados = validarEquipos(rawJson);
         if (validados && validados.length > 0) {
           return NextResponse.json({
             equipos: validados,
-            proveedor: 'deepseek',
+            proveedor: 'deepseek (respaldo)',
             fallback: true,
             gemini_error: geminiError
           });
         }
+        deepseekError = 'DeepSeek devolvió una lista vacía o estructura inválida.';
       } catch (err) {
-        console.error('DeepSeek falló:', err.message);
-        return NextResponse.json(
-          {
-            error: `Gemini falló (${geminiError}). DeepSeek falló (${err.message}).`
-          },
-          { status: 502 }
-        );
+        deepseekError = err.message;
+        console.error('DeepSeek respaldo falló:', err.message);
       }
     }
 
+    // Si ambos proveedores fallaron, reportar los detalles de ambos
     return NextResponse.json(
       {
-        error: `Gemini falló: ${geminiError || 'Revisa tu clave de API en Vercel.'}`
+        error: `Gemini falló (${geminiError || 'No configurado'}). DeepSeek falló (${deepseekError || 'No configurado'}).`,
+        gemini_error: geminiError,
+        deepseek_error: deepseekError
       },
       { status: 502 }
     );
@@ -131,7 +162,10 @@ REGLAS:
   }
 }
 
-async function llamarGemini(prompt, apiKey, model = 'gemini-1.5-flash') {
+// ==========================================================
+// CLIENTE GEMINI
+// ==========================================================
+async function ejecutarGemini(prompt, apiKey, model) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const controller = new AbortController();
@@ -163,6 +197,30 @@ async function llamarGemini(prompt, apiKey, model = 'gemini-1.5-flash') {
   }
 }
 
+async function obtenerModeloActivo(apiKey) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+  const response = await fetch(url);
+  if (!response.ok) return null;
+  const data = await response.json();
+  const models = data.models || [];
+
+  const flashModel = models.find(
+    m =>
+      m.supportedGenerationMethods?.includes('generateContent') &&
+      m.name?.toLowerCase().includes('flash')
+  );
+
+  if (flashModel) {
+    return flashModel.name.replace('models/', '');
+  }
+
+  const anyModel = models.find(m => m.supportedGenerationMethods?.includes('generateContent'));
+  return anyModel ? anyModel.name.replace('models/', '') : null;
+}
+
+// ==========================================================
+// CLIENTE DEEPSEEK (RESPALDO)
+// ==========================================================
 async function llamarDeepSeek(prompt, apiKey) {
   const url = 'https://api.deepseek.com/chat/completions';
   const controller = new AbortController();
@@ -200,6 +258,9 @@ async function llamarDeepSeek(prompt, apiKey) {
   }
 }
 
+// ==========================================================
+// UTILIDADES: EXTRACCIÓN Y VALIDACIÓN
+// ==========================================================
 function extraerJSON(text) {
   let limpio = text
     .trim()
@@ -226,7 +287,7 @@ function extraerJSON(text) {
     if (startArr !== -1 && endArr > startArr) {
       return JSON.parse(limpio.substring(startArr, endArr + 1));
     }
-    throw new Error('No se pudo extraer JSON de la respuesta.');
+    throw new Error('No se pudo extraer una estructura JSON válida de la respuesta.');
   }
 }
 
