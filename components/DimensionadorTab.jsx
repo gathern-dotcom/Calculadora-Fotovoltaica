@@ -15,20 +15,6 @@ import {
   COMBINER_MODELS_CATALOG
 } from '../lib/constants';
 
-// Factores oficiales de descuento por Kit
-const KIT_DISCOUNT_FACTORS = {
-  K1: 0.900,
-  K2: 0.910,
-  K3: 0.920,
-  K4: 0.920,
-  K5: 0.925,
-  K6: 0.930,
-  K7: 0.940,
-  K8: 0.945,
-  K9: 0.950,
-  K10: 0.954
-};
-
 export default function DimensionadorTab({
   siteParams,
   setSiteParams,
@@ -51,6 +37,9 @@ export default function DimensionadorTab({
   const [aiText, setAiText] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiStatus, setAiStatus] = useState(null);
+
+  // Estado para colapsar/desplegar el personalizador manual
+  const [showCustomKit, setShowCustomKit] = useState(false);
 
   // Estado del Personalizador Manual a partir de un Kit
   const [customConfig, setCustomConfig] = useState({
@@ -103,12 +92,6 @@ export default function DimensionadorTab({
     () => calcCustomKitProposal(customConfig),
     [customConfig]
   );
-
-  const customDiscountFactor = KIT_DISCOUNT_FACTORS[customConfig.baseKitId] || 1;
-  const customDiscountPct = Math.round((1 - customDiscountFactor) * 1000) / 10;
-  const customDiscountedPrice =
-    customResult.precioConDescuento ||
-    Math.round((customResult.precioFinal * customDiscountFactor) / 10000) * 10000;
 
   const handleApplianceChange = (index, field, value) => {
     setAppliances(prev => {
@@ -714,246 +697,265 @@ export default function DimensionadorTab({
         )}
 
         {/* ======================================================== */}
-        {/* PERSONALIZADOR MANUAL A PARTIR DE UN KIT                 */}
+        {/* PERSONALIZADOR MANUAL A PARTIR DE UN KIT (COLAPSABLE)     */}
         {/* ======================================================== */}
-        <section className="card border-2 border-dashed border-brand-blue/40 bg-gradient-to-b from-blue-50/20 to-transparent">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3 mb-4">
+        <section className="card border border-dashed border-brand-blue/40 bg-gradient-to-b from-blue-50/20 to-transparent transition-all">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="section-title mb-1">🛠 Personalizador a la medida (Modificar todo manualmente)</h2>
+              <h2 className="section-title mb-1 flex items-center gap-2">
+                <span>🛠</span> Personalizador a la medida (Modificar todo manualmente)
+              </h2>
               <p className="text-xs text-brand-muted m-0">
-                Selecciona un Kit del catálogo para precargar sus componentes y modifica manualmente las cantidades que desees:
+                Ajuste manual y configuración avanzada de componentes para asesores técnicos.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="baseKitSelect" className="text-xs font-semibold text-brand-text">
-                Cargar desde Kit:
-              </label>
-              <select
-                id="baseKitSelect"
-                value={customConfig.baseKitId}
-                onChange={e => handleLoadBaseKit(e.target.value)}
-                className="text-xs font-bold text-brand-blue bg-white border border-brand-blue rounded px-3 py-1.5 focus:outline-none cursor-pointer"
-              >
-                {KITS.map(k => (
-                  <option key={k.id} value={k.id}>
-                    {k.id} — {k.nombre} ({k.inversorW / 1000} kW)
-                  </option>
-                ))}
-              </select>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowCustomKit(prev => !prev)}
+              className="text-xs font-semibold px-3.5 py-2 rounded-md bg-white border border-brand-blue text-brand-blue hover:bg-blue-50 cursor-pointer transition-colors shadow-xs"
+            >
+              {showCustomKit ? '▲ Ocultar personalizador manual' : '▼ Modificar componentes manualmente'}
+            </button>
           </div>
 
-          {/* Formulario de selección y ajuste de componentes */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
-            
-            {/* 1. Paneles */}
-            <div className="bg-white border border-border rounded-lg p-3 space-y-2">
-              <div className="flex justify-between items-center text-xs font-semibold text-brand-text">
-                <span>☀️ Paneles Solares</span>
-                <span className="text-brand-muted font-mono">{customConfig.panelQty * customConfig.panelW} Wp</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[11px] text-brand-muted block mb-1">Potencia</label>
+          {showCustomKit && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <span className="text-xs text-brand-muted">
+                  Selecciona un Kit base para precargar sus componentes y ajusta las cantidades que desees:
+                </span>
+                <div className="flex items-center gap-2">
+                  <label htmlFor="baseKitSelect" className="text-xs font-semibold text-brand-text">
+                    Cargar desde Kit:
+                  </label>
                   <select
-                    value={customConfig.panelW}
-                    onChange={e => setCustomConfig(p => ({ ...p, panelW: parseFloat(e.target.value) }))}
-                    className="w-full text-xs"
+                    id="baseKitSelect"
+                    value={customConfig.baseKitId}
+                    onChange={e => handleLoadBaseKit(e.target.value)}
+                    className="text-xs font-bold text-brand-blue bg-white border border-brand-blue rounded px-3 py-1.5 focus:outline-none cursor-pointer"
                   >
-                    <option value="585">585 W</option>
-                    <option value="625">625 W</option>
+                    {KITS.map(k => (
+                      <option key={k.id} value={k.id}>
+                        {k.id} — {k.nombre} ({k.inversorW / 1000} kW)
+                      </option>
+                    ))}
                   </select>
                 </div>
-                <div>
-                  <label className="text-[11px] text-brand-muted block mb-1">Cantidad</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={customConfig.panelQty}
-                    onChange={e => setCustomConfig(p => ({ ...p, panelQty: parseInt(e.target.value) || 0 }))}
-                    className="w-full text-xs"
-                  />
+              </div>
+
+              {/* Formulario de selección y ajuste de componentes */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+                
+                {/* 1. Paneles */}
+                <div className="bg-white border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex justify-between items-center text-xs font-semibold text-brand-text">
+                    <span>☀️ Paneles Solares</span>
+                    <span className="text-brand-muted font-mono">{customConfig.panelQty * customConfig.panelW} Wp</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-brand-muted block mb-1">Potencia</label>
+                      <select
+                        value={customConfig.panelW}
+                        onChange={e => setCustomConfig(p => ({ ...p, panelW: parseFloat(e.target.value) }))}
+                        className="w-full text-xs"
+                      >
+                        <option value="585">585 W</option>
+                        <option value="625">625 W</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-brand-muted block mb-1">Cantidad</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={customConfig.panelQty}
+                        onChange={e => setCustomConfig(p => ({ ...p, panelQty: parseInt(e.target.value) || 0 }))}
+                        className="w-full text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Inversor */}
+                <div className="bg-white border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex justify-between items-center text-xs font-semibold text-brand-text">
+                    <span>⚡ Inversor</span>
+                    <span className="text-brand-muted font-mono">{customConfig.inverterW * customConfig.inverterQty} W</span>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-brand-muted block mb-1">Modelo</label>
+                    <select
+                      value={customConfig.inverterModel}
+                      onChange={e => {
+                        const inv = INVERTER_MODELS_CATALOG.find(i => i.value === e.target.value);
+                        setCustomConfig(p => ({
+                          ...p,
+                          inverterModel: e.target.value,
+                          inverterW: inv ? inv.w : 5000
+                        }));
+                      }}
+                      className="w-full text-xs"
+                    >
+                      {INVERTER_MODELS_CATALOG.map(inv => (
+                        <option key={inv.value} value={inv.value}>
+                          {inv.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <label className="text-[11px] text-brand-muted">Cantidad inversores:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={customConfig.inverterQty}
+                      onChange={e => setCustomConfig(p => ({ ...p, inverterQty: parseInt(e.target.value) || 1 }))}
+                      className="w-20 text-xs text-center"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Baterías LFP */}
+                <div className="bg-white border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex justify-between items-center text-xs font-semibold text-brand-text">
+                    <span>🔋 Baterías Litio LFP</span>
+                    <span className="text-brand-orange font-mono">{(customConfig.batteryQty * customConfig.batteryKwh).toFixed(1)} kWh</span>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-brand-muted block mb-1">Modelo de Batería</label>
+                    <select
+                      value={customConfig.batteryModel}
+                      onChange={e => {
+                        const bat = BATTERY_MODELS_CATALOG.find(b => b.value === e.target.value);
+                        setCustomConfig(p => ({
+                          ...p,
+                          batteryModel: e.target.value,
+                          batteryKwh: bat ? bat.kwh : 11.78
+                        }));
+                      }}
+                      className="w-full text-xs"
+                    >
+                      {BATTERY_MODELS_CATALOG.map(b => (
+                        <option key={b.value} value={b.value}>
+                          {b.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <label className="text-[11px] text-brand-muted">Cantidad módulos:</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="30"
+                      value={customConfig.batteryQty}
+                      onChange={e => setCustomConfig(p => ({ ...p, batteryQty: parseInt(e.target.value) || 0 }))}
+                      className="w-20 text-xs text-center"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Combiner Box */}
+                <div className="bg-white border border-border rounded-lg p-3 space-y-2">
+                  <span className="text-xs font-semibold text-brand-text block">🛡 Protección Combiner Box</span>
+                  <div>
+                    <label className="text-[11px] text-brand-muted block mb-1">Modelo de Caja</label>
+                    <select
+                      value={customConfig.combinerModel}
+                      onChange={e => setCustomConfig(p => ({ ...p, combinerModel: e.target.value }))}
+                      className="w-full text-xs"
+                    >
+                      {COMBINER_MODELS_CATALOG.map(c => (
+                        <option key={c.value} value={c.value}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <label className="text-[11px] text-brand-muted">Cantidad cajas:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={customConfig.combinerQty}
+                      onChange={e => setCustomConfig(p => ({ ...p, combinerQty: parseInt(e.target.value) || 1 }))}
+                      className="w-20 text-xs text-center"
+                    />
+                  </div>
+                </div>
+
+                {/* 5. Soportes de Techo */}
+                <div className="bg-white border border-border rounded-lg p-3 space-y-2">
+                  <span className="text-xs font-semibold text-brand-text block">🏗 Estructura de Montaje</span>
+                  <div className="field-row mb-0">
+                    <label className="text-[11px] text-brand-muted">
+                      Kits soporte (2 paneles c/u):
+                      <span className="hint">Sugerido para {customConfig.panelQty} paneles: {Math.ceil(customConfig.panelQty / 2)} kits</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={customConfig.soporteQty}
+                      onChange={e => setCustomConfig(p => ({ ...p, soporteQty: parseInt(e.target.value) || 0 }))}
+                      className="w-20 text-xs text-center"
+                    />
+                  </div>
+                </div>
+
+                {/* 6. Cableado Solar */}
+                <div className="bg-white border border-border rounded-lg p-3 space-y-2">
+                  <span className="text-xs font-semibold text-brand-text block">🔌 Cable Fotovoltaico 6mm</span>
+                  <div className="field-row mb-0">
+                    <label className="text-[11px] text-brand-muted">
+                      Metros totales de cable:
+                      <span className="hint">Positivo + Negativo</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="5"
+                      value={customConfig.cableMeters}
+                      onChange={e => setCustomConfig(p => ({ ...p, cableMeters: parseInt(e.target.value) || 0 }))}
+                      className="w-24 text-xs text-center"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Resumen del Sistema Personalizado */}
+              <div className="bg-white border border-border rounded-lg p-4 shadow-xs">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                  <div>
+                    <span className="text-[11px] font-mono text-brand-muted uppercase block">Costo BOM Equipos (U10)</span>
+                    <span className="text-lg font-bold text-brand-text">${fmt(customResult.bom.total)} COP</span>
+                    <span className="text-[11px] text-brand-muted block mt-0.5">Suma directa con precios mayoristas</span>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-mono text-brand-muted uppercase block">Fórmula de Escala Aplicada</span>
+                    <span className="text-xs font-bold text-brand-text font-mono">
+                      U10 × {customResult.formula.mult} + ${fmt(customResult.formula.fijo1 + customResult.formula.fijo2)}
+                    </span>
+                    <span className="text-[11px] text-brand-muted block mt-0.5">Asignada por potencia de {customResult.totalInverterW / 1000} kW</span>
+                  </div>
+
+                  <div className="bg-blue-50/60 p-3 rounded-lg border border-blue-100 flex flex-col justify-center space-y-1">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-[11px] font-mono text-brand-muted uppercase">Precio Lista:</span>
+                      <span className="text-xs font-semibold text-brand-muted line-through">${fmt(customResult.precioFinal)} COP</span>
+                    </div>
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-[11px] font-mono text-brand-blue uppercase font-bold">Con Descuento:</span>
+                      <span className="text-xl font-bold text-brand-blue font-mono">${fmt(customResult.precioConDescuento)} COP</span>
+                    </div>
+                    <span className="text-[10.5px] text-brand-muted block">Ahorro: ${fmt(customResult.precioFinal - customResult.precioConDescuento)} COP</span>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* 2. Inversor */}
-            <div className="bg-white border border-border rounded-lg p-3 space-y-2">
-              <div className="flex justify-between items-center text-xs font-semibold text-brand-text">
-                <span>⚡ Inversor</span>
-                <span className="text-brand-muted font-mono">{customConfig.inverterW * customConfig.inverterQty} W</span>
-              </div>
-              <div>
-                <label className="text-[11px] text-brand-muted block mb-1">Modelo</label>
-                <select
-                  value={customConfig.inverterModel}
-                  onChange={e => {
-                    const inv = INVERTER_MODELS_CATALOG.find(i => i.value === e.target.value);
-                    setCustomConfig(p => ({
-                      ...p,
-                      inverterModel: e.target.value,
-                      inverterW: inv ? inv.w : 5000
-                    }));
-                  }}
-                  className="w-full text-xs"
-                >
-                  {INVERTER_MODELS_CATALOG.map(inv => (
-                    <option key={inv.value} value={inv.value}>
-                      {inv.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2 pt-1">
-                <label className="text-[11px] text-brand-muted">Cantidad inversores:</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={customConfig.inverterQty}
-                  onChange={e => setCustomConfig(p => ({ ...p, inverterQty: parseInt(e.target.value) || 1 }))}
-                  className="w-20 text-xs text-center"
-                />
-              </div>
-            </div>
-
-            {/* 3. Baterías LFP */}
-            <div className="bg-white border border-border rounded-lg p-3 space-y-2">
-              <div className="flex justify-between items-center text-xs font-semibold text-brand-text">
-                <span>🔋 Baterías Litio LFP</span>
-                <span className="text-brand-orange font-mono">{(customConfig.batteryQty * customConfig.batteryKwh).toFixed(1)} kWh</span>
-              </div>
-              <div>
-                <label className="text-[11px] text-brand-muted block mb-1">Modelo de Batería</label>
-                <select
-                  value={customConfig.batteryModel}
-                  onChange={e => {
-                    const bat = BATTERY_MODELS_CATALOG.find(b => b.value === e.target.value);
-                    setCustomConfig(p => ({
-                      ...p,
-                      batteryModel: e.target.value,
-                      batteryKwh: bat ? bat.kwh : 11.78
-                    }));
-                  }}
-                  className="w-full text-xs"
-                >
-                  {BATTERY_MODELS_CATALOG.map(b => (
-                    <option key={b.value} value={b.value}>
-                      {b.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2 pt-1">
-                <label className="text-[11px] text-brand-muted">Cantidad módulos:</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="30"
-                  value={customConfig.batteryQty}
-                  onChange={e => setCustomConfig(p => ({ ...p, batteryQty: parseInt(e.target.value) || 0 }))}
-                  className="w-20 text-xs text-center"
-                />
-              </div>
-            </div>
-
-            {/* 4. Combiner Box */}
-            <div className="bg-white border border-border rounded-lg p-3 space-y-2">
-              <span className="text-xs font-semibold text-brand-text block">🛡 Protección Combiner Box</span>
-              <div>
-                <label className="text-[11px] text-brand-muted block mb-1">Modelo de Caja</label>
-                <select
-                  value={customConfig.combinerModel}
-                  onChange={e => setCustomConfig(p => ({ ...p, combinerModel: e.target.value }))}
-                  className="w-full text-xs"
-                >
-                  {COMBINER_MODELS_CATALOG.map(c => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2 pt-1">
-                <label className="text-[11px] text-brand-muted">Cantidad cajas:</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={customConfig.combinerQty}
-                  onChange={e => setCustomConfig(p => ({ ...p, combinerQty: parseInt(e.target.value) || 1 }))}
-                  className="w-20 text-xs text-center"
-                />
-              </div>
-            </div>
-
-            {/* 5. Soportes de Techo */}
-            <div className="bg-white border border-border rounded-lg p-3 space-y-2">
-              <span className="text-xs font-semibold text-brand-text block">🏗 Estructura de Montaje</span>
-              <div className="field-row mb-0">
-                <label className="text-[11px] text-brand-muted">
-                  Kits soporte (2 paneles c/u):
-                  <span className="hint">Sugerido para {customConfig.panelQty} paneles: {Math.ceil(customConfig.panelQty / 2)} kits</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={customConfig.soporteQty}
-                  onChange={e => setCustomConfig(p => ({ ...p, soporteQty: parseInt(e.target.value) || 0 }))}
-                  className="w-20 text-xs text-center"
-                />
-              </div>
-            </div>
-
-            {/* 6. Cableado Solar */}
-            <div className="bg-white border border-border rounded-lg p-3 space-y-2">
-              <span className="text-xs font-semibold text-brand-text block">🔌 Cable Fotovoltaico 6mm</span>
-              <div className="field-row mb-0">
-                <label className="text-[11px] text-brand-muted">
-                  Metros totales de cable:
-                  <span className="hint">Positivo + Negativo</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="5"
-                  value={customConfig.cableMeters}
-                  onChange={e => setCustomConfig(p => ({ ...p, cableMeters: parseInt(e.target.value) || 0 }))}
-                  className="w-24 text-xs text-center"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Resumen del Sistema Personalizado */}
-          <div className="bg-white border border-border rounded-lg p-4 shadow-xs">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-              <div>
-                <span className="text-[11px] font-mono text-brand-muted uppercase block">Costo BOM Equipos (U10)</span>
-                <span className="text-lg font-bold text-brand-text">${fmt(customResult.bom.total)} COP</span>
-                <span className="text-[11px] text-brand-muted block mt-0.5">Suma directa con precios mayoristas</span>
-              </div>
-
-              <div>
-                <span className="text-[11px] font-mono text-brand-muted uppercase block">Fórmula de Escala Aplicada</span>
-                <span className="text-xs font-bold text-brand-text font-mono">
-                  U10 × {customResult.formula.mult} + ${fmt(customResult.formula.fijo1 + customResult.formula.fijo2)}
-                </span>
-                <span className="text-[11px] text-brand-muted block mt-0.5">Asignada por potencia de {customResult.totalInverterW / 1000} kW</span>
-              </div>
-
-              <div className="bg-blue-50/60 p-3 rounded-lg border border-blue-100 flex flex-col justify-center space-y-1">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-[11px] font-mono text-brand-muted uppercase">Precio Lista:</span>
-                  <span className="text-xs font-semibold text-brand-muted line-through">${fmt(customResult.precioFinal)} COP</span>
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-[11px] font-mono text-brand-blue uppercase font-bold">Con Descuento ({customDiscountPct}%):</span>
-                  <span className="text-xl font-bold text-brand-blue font-mono">${fmt(customDiscountedPrice)} COP</span>
-                </div>
-                <span className="text-[10.5px] text-brand-muted block">Redondeado a $10.000 COP</span>
-              </div>
-            </div>
-          </div>
+          )}
         </section>
 
         {/* COMPARATIVA: KIT RECOMENDADO Y SISTEMA OPTIMIZADO */}
@@ -983,33 +985,28 @@ export default function DimensionadorTab({
                   <li><span className="k">Cable fotovoltaico</span><span className="v">{kitResult.kit.cable} m</span></li>
                 </ul>
 
-                {kitResult.pricing?.precioFinal && (() => {
-                  const factor = KIT_DISCOUNT_FACTORS[kitResult.kit.id] || 1;
-                  const pct = Math.round((1 - factor) * 1000) / 10;
-                  const precioDesc =
-                    kitResult.pricing.precioConDescuento ||
-                    Math.round((kitResult.pricing.precioFinal * factor) / 10000) * 10000;
-                  const ahorro = kitResult.pricing.precioFinal - precioDesc;
-
-                  return (
-                    <ul className="kit-specs mt-3 pt-2 border-t border-border space-y-1">
+                {kitResult.pricing?.precioFinal && (
+                  <ul className="kit-specs mt-3 pt-2 border-t border-border space-y-1">
+                    <li>
+                      <span className="k">Precio de lista (sin descuento)</span>
+                      <span className="v text-brand-muted line-through text-xs">${fmt(kitResult.pricing.precioFinal)} COP</span>
+                    </li>
+                    <li>
+                      <span className="k font-semibold text-brand-success">Precio con descuento</span>
+                      <span className="v text-brand-success font-bold text-base">
+                        ${fmt(kitResult.pricing.precioConDescuento || kitResult.pricing.precioFinal)} COP
+                      </span>
+                    </li>
+                    {kitResult.pricing.precioConDescuento && kitResult.pricing.precioFinal > kitResult.pricing.precioConDescuento && (
                       <li>
-                        <span className="k">Precio de lista oficial</span>
-                        <span className="v text-brand-muted line-through text-xs">${fmt(kitResult.pricing.precioFinal)} COP</span>
+                        <span className="k text-[11px] text-brand-muted">Ahorro comercial</span>
+                        <span className="v text-brand-muted font-mono text-xs">
+                          -${fmt(kitResult.pricing.precioFinal - kitResult.pricing.precioConDescuento)} COP
+                        </span>
                       </li>
-                      <li>
-                        <span className="k font-semibold text-brand-success">Precio con descuento ({pct}%)</span>
-                        <span className="v text-brand-success font-bold text-base">${fmt(precioDesc)} COP</span>
-                      </li>
-                      {ahorro > 0 && (
-                        <li>
-                          <span className="k text-[11px] text-brand-muted">Ahorro comercial</span>
-                          <span className="v text-brand-muted font-mono text-xs">-${fmt(ahorro)} COP</span>
-                        </li>
-                      )}
-                    </ul>
-                  );
-                })()}
+                    )}
+                  </ul>
+                )}
               </div>
             )}
           </section>
@@ -1128,4 +1125,3 @@ export default function DimensionadorTab({
     </div>
   );
 }
-
