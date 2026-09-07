@@ -1036,8 +1036,25 @@ export default function DimensionadorTab({
                 </ul>
 
                 {optimizedResult.pricing?.precioFinal && (
-                  <ul className="kit-specs mt-3 pt-2 border-t border-border">
-                    <li><span className="k">Precio final (llave en mano)</span><span className="v text-brand-blue font-bold text-sm">${fmt(optimizedResult.pricing.precioFinal)} COP</span></li>
+                  <ul className="kit-specs mt-3 pt-2 border-t border-border space-y-1">
+                    <li>
+                      <span className="k">Precio de lista (sin descuento)</span>
+                      <span className="v text-brand-muted line-through text-xs">${fmt(optimizedResult.pricing.precioFinal)} COP</span>
+                    </li>
+                    <li>
+                      <span className="k font-semibold text-brand-success">Precio con descuento</span>
+                      <span className="v text-brand-success font-bold text-base">
+                        ${fmt(optimizedResult.pricing.precioConDescuento || optimizedResult.pricing.precioFinal)} COP
+                      </span>
+                    </li>
+                    {optimizedResult.pricing.precioConDescuento && optimizedResult.pricing.precioFinal > optimizedResult.pricing.precioConDescuento && (
+                      <li>
+                        <span className="k text-[11px] text-brand-muted">Ahorro comercial</span>
+                        <span className="v text-brand-muted font-mono text-xs">
+                          -${fmt(optimizedResult.pricing.precioFinal - optimizedResult.pricing.precioConDescuento)} COP
+                        </span>
+                      </li>
+                    )}
                   </ul>
                 )}
               </div>
