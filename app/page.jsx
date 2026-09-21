@@ -1,40 +1,37 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
-import TabsNav from '../components/TabsNav';
 import DimensionadorTab from '../components/DimensionadorTab';
+import CatalogoTab from '../components/CatalogoTab';
 import ParametrosTab from '../components/ParametrosTab';
 import ProyectosTab from '../components/ProyectosTab';
-import InventarioTab from '../components/InventarioTab';
-import CommercialCardModal from '../components/CommercialCardModal';
-import ViabilityModal from '../components/ViabilityModal';
-
+import ModalComercial from '../components/ModalComercial';
+import ModalViabilidad from '../components/ModalViabilidad';
 import {
-  DEFAULT_APPLIANCES,
+  DEFAULT_BUSINESS_PARAMS,
   DEFAULT_INSTALL_PROJECT_PARAMS,
-  DEFAULT_BUSINESS_PARAMS
+  DEFAULT_APPLIANCES
 } from '../lib/constants';
-
 import {
-  calcKitPricing,
-  recommendKit,
+  calcManualBattery,
+  findCheapestBattery,
   findOptimizedSolution,
   calcOptimizedBOM,
   calcOptimizedPrice,
-  calcManualBattery,
-  findCheapestBattery,
+  calcKitPricing,
+  recommendKit,
   calcInstallCost,
   calcProjectTotals,
   generateEngineeringAdvisories
 } from '../lib/solar-engine';
 
-import { supabase } from '../lib/supabase';
-
 export default function Home() {
+  // Pestaña activa: 'dimensionador' | 'catalogo' | 'parametros' | 'proyectos'
   const [activeTab, setActiveTab] = useState('dimensionador');
 
-  // Estado: Metadatos del Cliente
+  // Metadatos del cliente
   const [projectMeta, setProjectMeta] = useState({
     cliente: '',
     telefono: '',
@@ -43,100 +40,81 @@ export default function Home() {
     ubicacion: ''
   });
 
-  // Estado: Parámetros del Sitio y del Sistema
-  const [siteParams, setSiteParams] = useState({
-    kwhMonth: 0,
-    useTableSum: false,
-    panelW: 625,
-    battKwh: 11.78,
-    autonomyHours: 14,
-    voltageOverride: 'auto',
-    showAdvanced: false,
-    hsp: 3.8, // Calibrado a radiación promedio en zonas llanas/cálidas
-    efficiency: 0.78, // Performance Ratio real aislado con litio
-    dod: 0.95, // DoD certificado en ficha técnica LFP
-    safetyFactor: 1.25,
-    manualSelection: false,
-    manualInverterW: 5000,
-    manualBatteryQty: 0
-  });
-
-  // Estado: Lista de Equipos
+  // Lista de electrodomésticos
   const [appliances, setAppliances] = useState(DEFAULT_APPLIANCES);
 
-  // Estado: Parámetros de Instalación (Proyecto y Negocio)
-  const [projectInstallParams, setProjectInstallParams] = useState(DEFAULT_INSTALL_PROJECT_PARAMS);
+  // Parámetros técnicos del sitio
+  const [siteParams, setSiteParams] = useState({
+    kwhMonth: 300,
+    useTableSum: false,
+    panelW: 625,
+    battKwh: 11.0,
+    autonomyHours: 14,
+    voltage: 48,
+    voltageOverride: 'auto',
+    hsp: 3.8,
+    efficiency: 0.78,
+    dod: 0.95,
+    safetyFactor: 1.25,
+    showAdvanced: false
+  });
+
+  // Parámetros de negocio e instalación
   const [businessParams, setBusinessParams] = useState(DEFAULT_BUSINESS_PARAMS);
+  const [projectInstallParams, setProjectInstallParams] = useState(DEFAULT_INSTALL_PROJECT_PARAMS);
 
-  // Estado: Modales y Estado de Guardado
-  const [isCommercialCardOpen, setIsCommercialCardOpen] = useState(false);
-  const [isViabilityOpen, setIsViabilityOpen] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null);
-
-  // Estado: Recomendaciones de Ingeniería aplicadas interactivamente por el asesor
+  // Observaciones técnicas aplicadas (Sinergy Advisor)
   const [appliedAdvisories, setAppliedAdvisories] = useState({});
 
-  const handleToggleAdvisory = advisoryId => {
-    setAppliedAdvisories(prev => ({ ...prev, [advisoryId]: !prev[advisoryId] }));
-  };
+  // Lista de proyectos guardados en Supabase
+  const [proyectos, setProyectos] = useState([]);
+  const [loadingProyectos, setLoadingProyectos] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null);
 
-  // ==================== MOTOR DE CÁLCULO REACTIVO ====================
+  // Modales
+  const [modalComercialOpen, setModalComercialOpen] = useState(false);
+  const [modalViabilidadOpen, setModalViabilidadOpen] = useState(false);
+
+  // =========================================================================
+  // MOTOR DE CÁLCULO EN TIEMPO REAL (REACTIVO)
+  // =========================================================================
   const calculationData = useMemo(() => {
-    let dailyWh = 0;
-    let peakLoadW = 0;
+    // 1. Consumo diario Wh y Carga Simultánea W
+    let tableDailyWh = 0;
+    let simultaneousW = 0;
 
-    appliances.forEach(app => {
-      const p = parseFloat(app.power) || 0;
-      const q = parseFloat(app.qty) || 0;
-      const h = parseFloat(app.hours) || 0;
-      dailyWh += p * q * h;
-      peakLoadW += p * q;
+    appliances.forEach(a => {
+      const p = parseFloat(a.power) || 0;
+      const q = parseFloat(a.qty) || 0;
+      const h = parseFloat(a.hours) || 0;
+      tableDailyWh += p * q * h;
+      simultaneousW += p * q;
     });
 
-    if (!siteParams.useTableSum) {
-      dailyWh = ((parseFloat(siteParams.kwhMonth) || 0) * 1000) / 30;
-    }
+    const dailyWh = siteParams.useTableSum
+      ? tableDailyWh
+      : (siteParams.kwhMonth / 30) * 1000;
 
-    const hsp = siteParams.hsp || 3.8;
-    const eff = siteParams.efficiency || 0.78;
-    const dod = siteParams.dod || 0.95;
-    const panelW = siteParams.panelW || 625;
-    const safety = siteParams.safetyFactor || 1.25;
+    const peakLoadW = simultaneousW;
 
-    const adjustedWh = eff > 0 ? dailyWh / eff : 0;
-    const fvPowerNeeded = hsp > 0 ? adjustedWh / hsp : 0;
-    let numPaneles = panelW > 0 ? Math.ceil(fvPowerNeeded / panelW) : 0;
+    // 2. Inversor preliminar
+    const rawInverterW = Math.round(peakLoadW * (siteParams.safetyFactor || 1.25));
+    let candidateInvW = 3000;
+    if (rawInverterW <= 3000) candidateInvW = 3000;
+    else if (rawInverterW <= 5000) candidateInvW = 5000;
+    else if (rawInverterW <= 6400) candidateInvW = 6400;
+    else if (rawInverterW <= 8000) candidateInvW = 8000;
+    else if (rawInverterW <= 10000) candidateInvW = 10000;
+    else if (rawInverterW <= 12000) candidateInvW = 12000;
+    else candidateInvW = 15000;
 
-    // Inversor base según carga continua y potencia fotovoltaica
-    const INVERTER_SIZES = [3000, 5000, 6400, 8000, 10000, 12000, 15000];
-    const rawInverterW = peakLoadW * safety;
-    const standardFromLoad =
-      INVERTER_SIZES.find(size => size >= rawInverterW) ||
-      INVERTER_SIZES[INVERTER_SIZES.length - 1];
-
-    const INVERTER_PV_CAPACITY = [
-      { w: 3000, maxKwp: 3.2 },
-      { w: 5000, maxKwp: 6.4 },
-      { w: 6400, maxKwp: 6.4 },
-      { w: 8000, maxKwp: 12.0 },
-      { w: 10000, maxKwp: 15.0 },
-      { w: 12000, maxKwp: 18.0 },
-      { w: 15000, maxKwp: 22.5 }
-    ];
-    const fvKwp = fvPowerNeeded / 1000;
-    const standardFromPV = (
-      INVERTER_PV_CAPACITY.find(x => x.maxKwp >= fvKwp) ||
-      INVERTER_PV_CAPACITY[INVERTER_PV_CAPACITY.length - 1]
-    ).w;
-
-    let inverterW = Math.max(standardFromLoad, standardFromPV);
-
-    // Si el asesor hizo clic en "Aplicar recomendación de motor", se actualiza dinámicamente
+    // Upgrade por arranque de motores si está aplicado
+    let inverterW = candidateInvW;
     if (appliedAdvisories['motor-inrush']) {
-      const upgradeInv = inverterW <= 3000 ? 5000 : inverterW <= 5000 ? 6400 : 8000;
-      inverterW = Math.max(inverterW, upgradeInv);
+      inverterW = candidateInvW <= 3000 ? 5000 : candidateInvW <= 5000 ? 6400 : 8000;
     }
 
+    // 3. Voltaje del sistema
     const voltage =
       siteParams.voltageOverride === 'auto'
         ? inverterW <= 4000
@@ -144,106 +122,158 @@ export default function Home() {
           : 48
         : parseFloat(siteParams.voltageOverride) || 48;
 
-    const autonomyDays = (siteParams.autonomyHours || 14) / 24;
-    const bankWh = dod > 0 ? (dailyWh * autonomyDays) / dod : 0;
-    const bankKwh = bankWh / 1000;
+    // 4. Potencia FV y número de paneles
+    const fvPowerNeeded =
+      dailyWh / ((siteParams.hsp || 3.8) * (siteParams.efficiency || 0.78));
 
-    const battKwh = siteParams.battKwh || (voltage === 24 ? 2.56 : 11.78);
-    let numBatteries =
-      siteParams.manualBatteryQty > 0
-        ? siteParams.manualBatteryQty
-        : battKwh > 0
-        ? Math.ceil(bankKwh / battKwh)
-        : 0;
-
-    // Si se aplicó la recomendación de tasa C de batería
-    if (appliedAdvisories['battery-crate'] && voltage === 48) {
-      const kwPerPack = battKwh >= 15 ? 8.0 : 5.0;
-      const minReqPower = Math.ceil(inverterW / 1000 / kwPerPack);
-      numBatteries = Math.max(numBatteries, minReqPower);
+    let numPaneles = Math.max(1, Math.ceil(fvPowerNeeded / siteParams.panelW));
+    if (appliedAdvisories['reserva-nubosidad']) {
+      numPaneles += 2;
     }
 
-    // 1. Kit Recomendado
-    const kitResult = recommendKit(fvPowerNeeded, bankKwh, inverterW);
-    const kitPricing = kitResult?.kit ? calcKitPricing(kitResult.kit) : null;
+    // 5. Dimensionamiento del banco de baterías
+    const hourlyWh = dailyWh / 24;
+    const nightWh = hourlyWh * (siteParams.autonomyHours || 14);
+    const bankKwh = nightWh / 1000 / (siteParams.dod || 0.95);
 
-    // 2. Sistema Optimizado
-    const manualW = siteParams.manualSelection ? siteParams.manualInverterW : null;
-    const optimized = findOptimizedSolution(numPaneles, manualW, inverterW);
-    const batteryOpt =
-      siteParams.manualBatteryQty > 0
-        ? (() => {
-            const manualResult = calcManualBattery(bankKwh, voltage, battKwh, inverterW);
-            return {
-              ...manualResult,
-              qty: siteParams.manualBatteryQty,
-              totalKwh: siteParams.manualBatteryQty * battKwh,
-              total: manualResult.unitPrice * siteParams.manualBatteryQty
-            };
-          })()
-        : findCheapestBattery(bankKwh, voltage, inverterW);
+    let batteryCalc = calcManualBattery(bankKwh, voltage, siteParams.battKwh, inverterW);
+    if (appliedAdvisories['battery-crate']) {
+      const kwPorBat = siteParams.battKwh >= 15 ? 7.5 : 5.1;
+      const reqCrate = Math.ceil(inverterW / 1000 / kwPorBat);
+      if (batteryCalc.qty < reqCrate) {
+        batteryCalc = {
+          ...batteryCalc,
+          qty: reqCrate,
+          total: batteryCalc.unitPrice * reqCrate,
+          totalKwh: reqCrate * siteParams.battKwh
+        };
+      }
+    }
+    const numBatteries = batteryCalc.qty;
 
-    let optimizedPricing = null;
-    let optimizedBOM = null;
-    if (optimized) {
-      optimizedBOM = calcOptimizedBOM(optimized, panelW, batteryOpt);
-      optimizedPricing = calcOptimizedPrice(optimizedBOM, optimized);
+    // 6. Selección de Kit Recomendado del catálogo
+    const kitResult = recommendKit(numPaneles * siteParams.panelW, bankKwh, inverterW);
+    if (kitResult?.kit) {
+      kitResult.pricing = calcKitPricing(kitResult.kit);
     }
 
-    // 3. Instalación y Totales del Proyecto
+    // 7. Sistema Optimizado (Ingeniería a la medida)
+    const optimizedSolution = findOptimizedSolution(numPaneles, null, inverterW);
+    let optimizedResult = null;
+    if (optimizedSolution) {
+      const batteryOpt = findCheapestBattery(bankKwh, voltage, inverterW);
+      const bomOpt = calcOptimizedBOM(optimizedSolution, siteParams.panelW, batteryOpt);
+      const pricingOpt = calcOptimizedPrice(bomOpt, optimizedSolution);
+      optimizedResult = {
+        ...optimizedSolution,
+        bom: bomOpt,
+        pricing: pricingOpt,
+        batteryOpt
+      };
+    }
+
+    // 8. Costos de Instalación y Viáticos
     const installResult = calcInstallCost(projectInstallParams, businessParams);
-    const bomEquipos = kitPricing ? kitPricing.bom.total : optimizedBOM?.total || 0;
-    const precioEquiposFinal =
-      kitPricing?.precioFinal || optimizedPricing?.precioFinal || 0;
 
+    // 9. Consolidado Financiero del Proyecto
+    const equiposPrecioFinal = kitResult?.pricing?.precioContado || kitResult?.pricing?.precioFinal || 0;
+    const equiposBOM = kitResult?.pricing?.bom?.total || 0;
     const projectTotals = calcProjectTotals(
-      bomEquipos,
-      precioEquiposFinal,
+      equiposBOM,
+      equiposPrecioFinal,
       installResult,
       businessParams
     );
 
-    // 4. Generación de Observaciones de Ingeniería en Vivo
-    const advisories = generateEngineeringAdvisories(
-      appliances,
-      { voltage, numBatteries, battKwh, numPaneles, dailyWh },
+    const calculo = {
+      dailyWh,
+      peakLoadW,
+      fvPowerNeeded,
+      numPaneles,
+      bankKwh,
+      numBatteries,
       inverterW,
-      appliedAdvisories
-    );
+      voltage,
+      batteryOpt: optimizedResult?.batteryOpt || batteryCalc
+    };
 
     return {
-      advisories,
-      calculo: {
-        dailyWh,
-        peakLoadW,
-        fvPowerNeeded,
-        numPaneles,
-        bankKwh,
-        numBatteries,
-        inverterW,
-        voltage,
-        batteryOpt,
-        panelW,
-        battKwh
-      },
-      kitResult: { ...kitResult, pricing: kitPricing },
-      optimizedResult: optimized ? { ...optimized, bom: optimizedBOM, pricing: optimizedPricing } : null,
+      calculo,
+      kitResult,
+      optimizedResult,
       installResult,
       projectTotals
     };
-  }, [appliances, siteParams, projectInstallParams, businessParams, appliedAdvisories]);
+  }, [
+    appliances,
+    siteParams,
+    businessParams,
+    projectInstallParams,
+    appliedAdvisories
+  ]);
 
-  // Guardar en Supabase
-  const handleSaveCloud = async () => {
+  // Actualizar voltaje en siteParams si está en 'auto'
+  useEffect(() => {
+    if (siteParams.voltageOverride === 'auto' && calculationData.calculo.voltage !== siteParams.voltage) {
+      setSiteParams(p => ({ ...p, voltage: calculationData.calculo.voltage }));
+    }
+  }, [calculationData.calculo.voltage, siteParams.voltageOverride, siteParams.voltage]);
+
+  // Asesor de ingeniería
+  const advisories = useMemo(() => {
+    return generateEngineeringAdvisories(
+      appliances,
+      calculationData.calculo,
+      calculationData.calculo.inverterW,
+      appliedAdvisories
+    );
+  }, [appliances, calculationData.calculo, appliedAdvisories]);
+
+  const handleToggleAdvisory = advisoryId => {
+    setAppliedAdvisories(prev => ({
+      ...prev,
+      [advisoryId]: !prev[advisoryId]
+    }));
+  };
+
+  // =========================================================================
+  // SUPABASE: CONSULTAR, GUARDAR, CARGAR Y ELIMINAR PROYECTOS
+  // =========================================================================
+  const fetchProyectos = async () => {
+    setLoadingProyectos(true);
     try {
-      setSaveStatus({ type: 'muted', message: 'Guardando en Supabase…' });
+      const { data, error } = await supabase
+        .from('proyectos')
+        .select('*')
+        .order('creado_en', { ascending: false });
 
+      if (error) throw error;
+      if (data) setProyectos(data);
+    } catch (err) {
+      console.error('Error al consultar proyectos en Supabase:', err);
+    } finally {
+      setLoadingProyectos(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProyectos();
+  }, []);
+
+  const handleSaveCloud = async () => {
+    setSaveStatus({ type: 'muted', message: 'Guardando proyecto en Supabase…' });
+
+    try {
       const payload = {
         cliente: projectMeta.cliente || null,
         telefono: projectMeta.telefono || null,
         cedula: projectMeta.cedula || null,
         niu: projectMeta.niu || null,
         ubicacion: projectMeta.ubicacion || null,
+        // CAMPOS DE SEGUIMIENTO COMERCIAL (CRM)
+        estado: 'cotizado',
+        fecha_proximo_contacto: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+        notas_seguimiento: '',
         parametros: {
           ...siteParams,
           voltage: calculationData.calculo.voltage,
@@ -259,147 +289,129 @@ export default function Home() {
           inversor_w: calculationData.calculo.inverterW,
           precio_instalacion: calculationData.installResult.precioFinal,
           precio_total_proyecto: calculationData.projectTotals.precioVentaTotal,
-          margen_bruto_total_pct: calculationData.projectTotals.margenBrutoPct
+          margen_bruto_total_pct: calculationData.projectTotals.margenBrutoPct,
+          sistema_optimizado_detalle: calculationData.optimizedResult || null,
+          instalacion_detalle: calculationData.installResult || null
         },
         kit_recomendado: calculationData.kitResult?.kit
           ? `${calculationData.kitResult.kit.id} — ${calculationData.kitResult.kit.nombre}`
           : null,
         kit_cumple: calculationData.kitResult?.cumple || null,
         precio_equipos: calculationData.kitResult?.pricing?.bom?.total || null,
-        precio_con_descuento: calculationData.kitResult?.pricing?.precioConDescuento || null,
-        precio_final: calculationData.kitResult?.pricing?.precioFinal || null,
-        sistema_optimizado: calculationData.optimizedResult
-          ? {
-              paneles: calculationData.optimizedResult.totalPanels,
-              marca: calculationData.optimizedResult.inverter?.brand,
-              inversor_w: calculationData.optimizedResult.inverter?.w,
-              cantidad_inversores: calculationData.optimizedResult.qty,
-              distribucion: calculationData.optimizedResult.configs?.map(c =>
-                c.inverter?.type === 'foc' ? c.layout : c.layoutText
-              ),
-              precio_equipos: calculationData.optimizedResult.bom?.total,
-              precio_final: calculationData.optimizedResult.pricing?.precioFinal
-            }
-          : null,
-        instalacion: calculationData.installResult
+        precio_con_descuento: calculationData.kitResult?.pricing?.precioReferido || calculationData.kitResult?.pricing?.precioConDescuento || null,
+        precio_final: calculationData.kitResult?.pricing?.precioContado || calculationData.kitResult?.pricing?.precioFinal || null
       };
 
       const { error } = await supabase.from('proyectos').insert(payload);
       if (error) throw error;
 
-      setSaveStatus({
-        type: 'success',
-        message: '✓ Proyecto guardado exitosamente en la base de datos de Supabase.'
-      });
+      setSaveStatus({ type: 'success', message: '✓ Proyecto guardado exitosamente en Supabase con seguimiento activo.' });
+      fetchProyectos();
     } catch (err) {
-      console.error('Error al guardar en Supabase:', err);
-      setSaveStatus({
-        type: 'danger',
-        message: 'Error al guardar en Supabase: ' + err.message
-      });
+      setSaveStatus({ type: 'danger', message: 'Error al guardar en Supabase: ' + err.message });
     }
   };
 
-  // Exportar JSON Local
-  const handleExportJson = () => {
-    const project = {
-      cliente: projectMeta.cliente,
-      telefono: projectMeta.telefono,
-      cedula: projectMeta.cedula,
-      niu: projectMeta.niu,
-      ubicacion: projectMeta.ubicacion,
-      fecha: new Date().toISOString(),
-      siteParams: {
-        ...siteParams,
-        voltage: calculationData.calculo.voltage
-      },
-      equipos: appliances,
-      calculo: calculationData.calculo,
-      kitRecomendado: calculationData.kitResult,
-      sistemaOptimizado: calculationData.optimizedResult,
-      instalacion: calculationData.installResult,
-      totales: calculationData.projectTotals,
-      asesorias_aplicadas: appliedAdvisories
-    };
+  const handleLoadProject = project => {
+    if (project.parametros) {
+      setSiteParams(prev => ({
+        ...prev,
+        ...project.parametros
+      }));
+      if (project.parametros.instalacion) {
+        setProjectInstallParams(project.parametros.instalacion);
+      }
+      if (project.parametros.tarifas) {
+        setBusinessParams(project.parametros.tarifas);
+      }
+    }
+    if (project.equipos && Array.isArray(project.equipos)) {
+      setAppliances(project.equipos);
+    }
+    setProjectMeta({
+      cliente: project.cliente || '',
+      telefono: project.telefono || '',
+      cedula: project.cedula || '',
+      niu: project.niu || '',
+      ubicacion: project.ubicacion || ''
+    });
+    setActiveTab('dimensionador');
+    alert(`✓ Proyecto cargado: ${project.cliente || 'Sin nombre'}`);
+  };
 
-    const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+  const handleDeleteProject = async id => {
+    if (!confirm('¿Seguro que deseas eliminar este proyecto de la base de datos?')) return;
+    try {
+      const { error } = await supabase.from('proyectos').delete().eq('id', id);
+      if (error) throw error;
+      setProyectos(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      alert('Error al eliminar proyecto: ' + err.message);
+    }
+  };
+
+  const handleExportJson = () => {
+    const exportData = {
+      metadata: projectMeta,
+      siteParams,
+      appliances,
+      calculation: calculationData,
+      businessParams,
+      projectInstallParams,
+      fechaExport: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const safeName = (projectMeta.cliente || 'proyecto').toLowerCase().replace(/[^a-z0-9]+/g, '-');
     a.href = url;
-    a.download = `proyecto-sinergy-${safeName}-${Date.now()}.json`;
-    document.body.appendChild(a);
+    a.download = `Proyecto_FV_${(projectMeta.cliente || 'Sinergy').replace(/\\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    a.remove();
     URL.revokeObjectURL(url);
   };
 
-  // Restablecer formulario
   const handleReset = () => {
-    if (!confirm('¿Deseas restablecer todos los valores al estado por defecto?')) return;
+    if (!confirm('¿Restablecer todos los parámetros del dimensionador al valor inicial?')) return;
     setAppliances(DEFAULT_APPLIANCES);
-    setProjectMeta({ cliente: '', telefono: '', cedula: '', niu: '', ubicacion: '' });
     setSiteParams({
-      kwhMonth: 0,
+      kwhMonth: 300,
       useTableSum: false,
       panelW: 625,
-      battKwh: 11.78,
+      battKwh: 11.0,
       autonomyHours: 14,
+      voltage: 48,
       voltageOverride: 'auto',
-      showAdvanced: false,
       hsp: 3.8,
       efficiency: 0.78,
       dod: 0.95,
       safetyFactor: 1.25,
-      manualSelection: false,
-      manualInverterW: 5000,
-      manualBatteryQty: 0
+      showAdvanced: false
     });
     setAppliedAdvisories({});
+    setProjectMeta({
+      cliente: '',
+      telefono: '',
+      cedula: '',
+      niu: '',
+      ubicacion: ''
+    });
     setSaveStatus(null);
   };
 
-  // Cargar proyecto desde Base de Datos
-  const handleLoadProjectToDimensioner = p => {
-    setProjectMeta({
-      cliente: p.cliente || '',
-      telefono: p.telefono || '',
-      cedula: p.cedula || '',
-      niu: p.niu || '',
-      ubicacion: p.ubicacion || ''
-    });
-
-    if (p.parametros) {
-      setSiteParams(prev => ({
-        ...prev,
-        ...p.parametros,
-        kwhMonth: p.parametros.kwhMonth || 0
-      }));
-      if (p.parametros.instalacion) {
-        setProjectInstallParams(p.parametros.instalacion);
-      }
-      if (p.parametros.tarifas) {
-        setBusinessParams(p.parametros.tarifas);
-      }
-    }
-
-    if (Array.isArray(p.equipos) && p.equipos.length > 0) {
-      setAppliances(p.equipos);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-white text-brand-text flex flex-col font-sans">
-      <Header projectMeta={projectMeta} setProjectMeta={setProjectMeta} />
-      <TabsNav activeTab={activeTab} setActiveTab={setActiveTab} />
+    <div className="min-h-screen bg-[#F8FAFC] text-brand-text flex flex-col font-sans">
+      {/* Encabezado con navegación de pestañas */}
+      <Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        projectMeta={projectMeta}
+        setProjectMeta={setProjectMeta}
+      />
 
-      <main className="flex-1">
+      {/* Contenido según la pestaña activa */}
+      <div className="flex-1">
         {activeTab === 'dimensionador' && (
           <DimensionadorTab
-            siteParams={{
-              ...siteParams,
-              voltage: calculationData.calculo.voltage
-            }}
+            siteParams={siteParams}
             setSiteParams={setSiteParams}
             appliances={appliances}
             setAppliances={setAppliances}
@@ -412,86 +424,60 @@ export default function Home() {
             onExportJson={handleExportJson}
             onReset={handleReset}
             saveStatus={saveStatus}
-            advisories={calculationData.advisories}
+            advisories={advisories}
             onToggleAdvisory={handleToggleAdvisory}
-            onOpenCommercialCard={() => setIsCommercialCardOpen(true)}
-            onOpenViability={() => setIsViabilityOpen(true)}
+            onOpenCommercialCard={() => setModalComercialOpen(true)}
+            onOpenViability={() => setModalViabilidadOpen(true)}
           />
         )}
 
+        {activeTab === 'catalogo' && <CatalogoTab />}
+
         {activeTab === 'parametros' && (
           <ParametrosTab
-            projectInstallParams={projectInstallParams}
-            setProjectInstallParams={setProjectInstallParams}
             businessParams={businessParams}
             setBusinessParams={setBusinessParams}
-            onResetDefaults={() => {
-              setProjectInstallParams(DEFAULT_INSTALL_PROJECT_PARAMS);
-              setBusinessParams(DEFAULT_BUSINESS_PARAMS);
-            }}
+            projectInstallParams={projectInstallParams}
+            setProjectInstallParams={setProjectInstallParams}
+            installResult={calculationData.installResult}
+            projectTotals={calculationData.projectTotals}
           />
         )}
 
         {activeTab === 'proyectos' && (
           <ProyectosTab
-            onLoadProjectToDimensioner={handleLoadProjectToDimensioner}
-            setActiveTab={setActiveTab}
+            proyectos={proyectos}
+            loadingProyectos={loadingProyectos}
+            onRefresh={fetchProyectos}
+            onLoadProject={handleLoadProject}
+            onDeleteProject={handleDeleteProject}
           />
         )}
+      </div>
 
-        {activeTab === 'inventario' && (
-          <InventarioTab
-            currentProjectReqs={{
-              numPaneles: calculationData.calculo.numPaneles,
-              panelW: siteParams.panelW,
-              numBaterias: calculationData.calculo.numBatteries,
-              battKwh: siteParams.battKwh,
-              inverterW: calculationData.calculo.inverterW
-            }}
-          />
-        )}
-      </main>
+      {/* Modal Ficha Comercial WhatsApp */}
+      {modalComercialOpen && (
+        <ModalComercial
+          isOpen={modalComercialOpen}
+          onClose={() => setModalComercialOpen(false)}
+          projectMeta={projectMeta}
+          calculo={calculationData.calculo}
+          kitResult={calculationData.kitResult}
+          projectTotals={calculationData.projectTotals}
+        />
+      )}
 
-      <footer className="border-t border-border py-4 text-center text-xs text-brand-muted font-mono">
-        Dimensionador FV — Sinergy Soluciones Integrales · Plataforma de Ingeniería y Preventa Solar Off-Grid
-      </footer>
-
-      {/* MODAL FICHA COMERCIAL PNG */}
-      <CommercialCardModal
-        isOpen={isCommercialCardOpen}
-        onClose={() => setIsCommercialCardOpen(false)}
-        projectData={{
-          cliente: projectMeta.cliente,
-          telefono: projectMeta.telefono,
-          cedula: projectMeta.cedula,
-          niu: projectMeta.niu,
-          ubicacion: projectMeta.ubicacion,
-          fecha: new Date().toISOString(),
-          calculo: calculationData.calculo,
-          kitResult: calculationData.kitResult,
-          optimizedResult: calculationData.optimizedResult,
-          installResult: calculationData.installResult,
-          projectTotals: calculationData.projectTotals
-        }}
-      />
-
-      {/* MODAL SOLICITUD DE VIABILIDAD */}
-      <ViabilityModal
-        isOpen={isViabilityOpen}
-        onClose={() => setIsViabilityOpen(false)}
-        projectData={{
-          cliente: projectMeta.cliente,
-          telefono: projectMeta.telefono,
-          cedula: projectMeta.cedula,
-          niu: projectMeta.niu,
-          ubicacion: projectMeta.ubicacion,
-          calculo: calculationData.calculo,
-          kitResult: calculationData.kitResult,
-          optimizedResult: calculationData.optimizedResult,
-          projectTotals: calculationData.projectTotals,
-          appliances
-        }}
-      />
+      {/* Modal Solicitud de Viabilidad */}
+      {modalViabilidadOpen && (
+        <ModalViabilidad
+          isOpen={modalViabilidadOpen}
+          onClose={() => setModalViabilidadOpen(false)}
+          projectMeta={projectMeta}
+          calculo={calculationData.calculo}
+          kitResult={calculationData.kitResult}
+          installResult={calculationData.installResult}
+        />
+      )}
     </div>
   );
 }
