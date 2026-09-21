@@ -7,11 +7,13 @@ import DimensionadorTab from '../components/DimensionadorTab';
 import ParametrosTab from '../components/ParametrosTab';
 import ProyectosTab from '../components/ProyectosTab';
 import {
+  KITS,
   DEFAULT_BUSINESS_PARAMS,
   DEFAULT_INSTALL_PROJECT_PARAMS,
   DEFAULT_APPLIANCES
 } from '../lib/constants';
 import {
+  fmt,
   calcManualBattery,
   findCheapestBattery,
   findOptimizedSolution,
@@ -24,8 +26,73 @@ import {
   generateEngineeringAdvisories
 } from '../lib/solar-engine';
 
+// =========================================================================
+// VISTA INTEGRADA DE CATÁLOGO DE KITS (10 KITS CON SUS 3 PRECIOS)
+// =========================================================================
+function CatalogoView() {
+  return (
+    <div className="max-w-[1280px] mx-auto p-4 sm:p-7 space-y-6 font-sans">
+      <div className="border-b border-border pb-3">
+        <h1 className="text-xl font-bold text-brand-text flex items-center gap-2">
+          <span>📦</span> Catálogo Oficial de Kits Fotovoltaicos (Septiembre 2026)
+        </h1>
+        <p className="text-xs text-brand-muted m-0 mt-1">
+          Kits solares aislados completos con precios oficiales de contado, financiado (crédito) y tarifa con código de referido.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {KITS.map(kit => {
+          const pricing = calcKitPricing(kit);
+          return (
+            <div key={kit.id} className="kit-card bg-white border border-border rounded-xl p-5 shadow-xs space-y-3">
+              <div className="flex justify-between items-baseline border-b border-border pb-2">
+                <div>
+                  <span className="text-[11px] font-mono font-bold text-brand-blue uppercase tracking-wider">{kit.id}</span>
+                  <h3 className="text-base font-bold text-brand-text m-0">{kit.nombre}</h3>
+                </div>
+                <span className="text-xs font-mono font-semibold text-brand-orange bg-orange-50 px-2 py-0.5 rounded">
+                  {kit.inversorW / 1000} kW
+                </span>
+              </div>
+
+              <ul className="kit-specs text-xs space-y-1.5 text-brand-text">
+                <li><span className="k text-brand-muted">Paneles solares:</span> <span className="v font-semibold">{kit.paneles} un · {kit.panelW}W ({fmt(kit.totalWp)} Wp)</span></li>
+                <li><span className="k text-brand-muted">Inversor:</span> <span className="v font-semibold">{kit.inversor}</span></li>
+                <li><span className="k text-brand-muted">Baterías LFP:</span> <span className="v font-semibold">{kit.bateriaCant} un · {kit.bateriaModelo} ({fmt(kit.totalBateriaKwh, 1)} kWh)</span></li>
+                <li><span className="k text-brand-muted">Protección DC:</span> <span className="v">{kit.proteccionDC}</span></li>
+                <li><span className="k text-brand-muted">Estructura:</span> <span className="v">{kit.soporte} kits soporte techo</span></li>
+                <li><span className="k text-brand-muted">Cableado:</span> <span className="v">{kit.cable} metros 6mm</span></li>
+              </ul>
+
+              {/* 3 Modalidades de Precio Oficiales */}
+              <div className="pt-3 border-t border-border space-y-2">
+                <div className="bg-gray-50 p-2 rounded border border-border flex justify-between items-center text-xs">
+                  <span className="text-brand-muted font-medium">Normal (Crédito):</span>
+                  <span className="font-mono font-bold text-brand-text">${fmt(pricing.precioCredito)} COP</span>
+                </div>
+                <div className="bg-blue-50/70 p-2.5 rounded border border-blue-200 flex justify-between items-center text-xs">
+                  <span className="text-brand-blue font-bold uppercase">De Contado:</span>
+                  <span className="font-mono font-bold text-brand-blue text-sm">${fmt(pricing.precioContado)} COP</span>
+                </div>
+                <div className="bg-green-50/80 p-2.5 rounded border border-green-200 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="text-brand-success font-bold uppercase block">Con Referido:</span>
+                    <span className="text-[10px] text-brand-success">Ahorro: ${fmt(pricing.ahorroReferido)}</span>
+                  </div>
+                  <span className="font-mono font-bold text-brand-success text-sm">${fmt(pricing.precioReferido)} COP</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
-  // Pestaña activa: 'dimensionador' | 'parametros' | 'proyectos'
+  // Pestaña activa: 'dimensionador' | 'catalogo' | 'parametros' | 'proyectos'
   const [activeTab, setActiveTab] = useState('dimensionador');
 
   // Metadatos del cliente
@@ -72,7 +139,6 @@ export default function Home() {
   // MOTOR DE CÁLCULO EN TIEMPO REAL (REACTIVO)
   // =========================================================================
   const calculationData = useMemo(() => {
-    // 1. Consumo diario Wh y Carga Simultánea W
     let tableDailyWh = 0;
     let simultaneousW = 0;
 
@@ -90,7 +156,6 @@ export default function Home() {
 
     const peakLoadW = simultaneousW;
 
-    // 2. Inversor preliminar
     const rawInverterW = Math.round(peakLoadW * (siteParams.safetyFactor || 1.25));
     let candidateInvW = 3000;
     if (rawInverterW <= 3000) candidateInvW = 3000;
@@ -101,13 +166,11 @@ export default function Home() {
     else if (rawInverterW <= 12000) candidateInvW = 12000;
     else candidateInvW = 15000;
 
-    // Upgrade por arranque de motores si está aplicado
     let inverterW = candidateInvW;
     if (appliedAdvisories['motor-inrush']) {
       inverterW = candidateInvW <= 3000 ? 5000 : candidateInvW <= 5000 ? 6400 : 8000;
     }
 
-    // 3. Voltaje del sistema
     const voltage =
       siteParams.voltageOverride === 'auto'
         ? inverterW <= 4000
@@ -115,7 +178,6 @@ export default function Home() {
           : 48
         : parseFloat(siteParams.voltageOverride) || 48;
 
-    // 4. Potencia FV y número de paneles
     const fvPowerNeeded =
       dailyWh / ((siteParams.hsp || 3.8) * (siteParams.efficiency || 0.78));
 
@@ -124,7 +186,6 @@ export default function Home() {
       numPaneles += 2;
     }
 
-    // 5. Dimensionamiento del banco de baterías
     const hourlyWh = dailyWh / 24;
     const nightWh = hourlyWh * (siteParams.autonomyHours || 14);
     const bankKwh = nightWh / 1000 / (siteParams.dod || 0.95);
@@ -144,13 +205,11 @@ export default function Home() {
     }
     const numBatteries = batteryCalc.qty;
 
-    // 6. Selección de Kit Recomendado del catálogo
     const kitResult = recommendKit(numPaneles * siteParams.panelW, bankKwh, inverterW);
     if (kitResult?.kit) {
       kitResult.pricing = calcKitPricing(kitResult.kit);
     }
 
-    // 7. Sistema Optimizado (Ingeniería a la medida)
     const optimizedSolution = findOptimizedSolution(numPaneles, null, inverterW);
     let optimizedResult = null;
     if (optimizedSolution) {
@@ -165,10 +224,8 @@ export default function Home() {
       };
     }
 
-    // 8. Costos de Instalación y Viáticos
     const installResult = calcInstallCost(projectInstallParams, businessParams);
 
-    // 9. Consolidado Financiero del Proyecto
     const equiposPrecioFinal = kitResult?.pricing?.precioContado || kitResult?.pricing?.precioFinal || 0;
     const equiposBOM = kitResult?.pricing?.bom?.total || 0;
     const projectTotals = calcProjectTotals(
@@ -205,14 +262,12 @@ export default function Home() {
     appliedAdvisories
   ]);
 
-  // Actualizar voltaje en siteParams si está en 'auto'
   useEffect(() => {
     if (siteParams.voltageOverride === 'auto' && calculationData.calculo.voltage !== siteParams.voltage) {
       setSiteParams(p => ({ ...p, voltage: calculationData.calculo.voltage }));
     }
   }, [calculationData.calculo.voltage, siteParams.voltageOverride, siteParams.voltage]);
 
-  // Asesor de ingeniería
   const advisories = useMemo(() => {
     return generateEngineeringAdvisories(
       appliances,
@@ -263,7 +318,6 @@ export default function Home() {
         cedula: projectMeta.cedula || null,
         niu: projectMeta.niu || null,
         ubicacion: projectMeta.ubicacion || null,
-        // CAMPOS DE SEGUIMIENTO COMERCIAL (CRM)
         estado: 'cotizado',
         fecha_proximo_contacto: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
         notas_seguimiento: '',
@@ -287,7 +341,7 @@ export default function Home() {
           instalacion_detalle: calculationData.installResult || null
         },
         kit_recomendado: calculationData.kitResult?.kit
-          ? `${calculationData.kitResult.kit.id} — ${calculationData.kitResult.kit.nombre}`
+          ? `${calculationData.kitResult.kit.id} —${calculationData.kitResult.kit.nombre}`
           : null,
         kit_cumple: calculationData.kitResult?.cumple || null,
         precio_equipos: calculationData.kitResult?.pricing?.bom?.total || null,
@@ -357,7 +411,7 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Proyecto_FV_${(projectMeta.cliente || 'Sinergy').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `Proyecto_FV_${(projectMeta.cliente \vert{}\vert{} 'Sinergy').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -390,7 +444,6 @@ export default function Home() {
     setSaveStatus(null);
   };
 
-  // Enlace directo a WhatsApp con ficha técnica y comercial
   const handleOpenCommercialCard = () => {
     const kit = calculationData.kitResult?.kit;
     const precio = calculationData.kitResult?.pricing?.precioContado || calculationData.kitResult?.pricing?.precioFinal;
@@ -398,7 +451,7 @@ export default function Home() {
       `*PROPUESTA COMERCIAL — SINERGY SOLUCIONES INTEGRALES*\n\n` +
       `👤 *Cliente:* ${projectMeta.cliente || 'Estimado cliente'}\n` +
       `📍 *Ubicación:* ${projectMeta.ubicacion || 'Colombia'}\n` +
-      `☀️ *Kit Recomendado:* ${kit ? `${kit.id} —${kit.nombre}` : 'Personalizado'}\n` +
+      `☀️ *Kit Recomendado:* ${kit ? `${kit.id} — ${kit.nombre}` : 'Personalizado'}\n` +
       `⚡ *Potencia FV:* ${calculationData.calculo.numPaneles} paneles (${calculationData.calculo.numPaneles * siteParams.panelW} Wp)\n` +
       `🔋 *Baterías:* ${calculationData.calculo.numBatteries} unidades (${calculationData.calculo.bankKwh.toFixed(1)} kWh)\n` +
       `🔌 *Inversor:* ${calculationData.calculo.inverterW / 1000} kW (120/240V)\n\n` +
@@ -411,7 +464,6 @@ export default function Home() {
     window.open(url, '_blank');
   };
 
-  // Solicitud de Viabilidad
   const handleOpenViability = () => {
     const nombre = projectMeta.cliente || 'Cliente';
     const kit = calculationData.kitResult?.kit?.nombre || 'Personalizado';
@@ -420,7 +472,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-brand-text flex flex-col font-sans">
-      {/* Encabezado con navegación de pestañas */}
+      {/* Encabezado con datos del cliente */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -428,7 +480,76 @@ export default function Home() {
         setProjectMeta={setProjectMeta}
       />
 
-      {/* Contenido según la pestaña activa */}
+      {/* ======================================================== */}
+      {/* BARRA DE PESTAÑAS (TABS VISIBLES Y SIEMPRE DISPONIBLES)  */}
+      {/* ======================================================== */}
+      <div className="bg-white border-b border-border sticky top-0 z-20 shadow-2xs">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-7 flex items-center justify-between overflow-x-auto">
+          <nav className="flex space-x-1 sm:space-x-3 py-2.5">
+            <button
+              type="button"
+              onClick={() => setActiveTab('dimensionador')}
+              className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer transition-all ${
+                activeTab === 'dimensionador'
+                  ? 'bg-brand-blue text-white shadow-xs'
+                  : 'text-brand-muted hover:text-brand-text hover:bg-gray-100'
+              }`}
+            >
+              <span>⚡</span> Dimensionador Solar
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('catalogo')}
+              className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer transition-all ${
+                activeTab === 'catalogo'
+                  ? 'bg-brand-blue text-white shadow-xs'
+                  : 'text-brand-muted hover:text-brand-text hover:bg-gray-100'
+              }`}
+            >
+              <span>📦</span> Catálogo de Kits (10 Kits)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('parametros')}
+              className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer transition-all ${
+                activeTab === 'parametros'
+                  ? 'bg-brand-blue text-white shadow-xs'
+                  : 'text-brand-muted hover:text-brand-text hover:bg-gray-100'
+              }`}
+            >
+              <span>⚙️</span> Parámetros e Instalación
+            </button>
+
+            <              }`}
+            >
+              <span>⚙️</span> Parámetros e Instalación
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('proyectos')}
+              className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer transition-all ${
+                activeTab === 'proyectos'
+                  ? 'bg-brand-blue text-white shadow-xs'
+                  : 'text-brand-muted hover:text-brand-text hover:bg-gray-100'
+              }`}
+            >
+              <span>📁</span> Proyectos y CRM
+              {proyectos.length > 0 && (
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                  activeTab === 'proyectos' ? 'bg-white text-brand-blue font-bold' : 'bg-brand-blue text-white'
+                }`}>
+                  {proyectos.length}
+                </span>
+              )}
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Contenido de la pestaña activa */}
       <div className="flex-1">
         {activeTab === 'dimensionador' && (
           <DimensionadorTab
@@ -451,6 +572,8 @@ export default function Home() {
             onOpenViability={handleOpenViability}
           />
         )}
+
+        {activeTab === 'catalogo' && <CatalogoView />}
 
         {activeTab === 'parametros' && (
           <ParametrosTab
