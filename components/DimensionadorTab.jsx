@@ -1036,7 +1036,7 @@ export default function DimensionadorTab({
           </div>
         </section>
 
-        {/* Acciones */}
+       {/* Acciones */}
         <section className="card">
           <div className="flex flex-wrap gap-2.5 items-center justify-between">
             <div className="flex flex-wrap gap-2.5">
@@ -1074,12 +1074,6 @@ export default function DimensionadorTab({
               type="button"
               onClick={onReset}
               className="text-xs text-brand-muted hover:text-brand-danger font-semibold cursor-pointer"
-            >
-              Restablecer valores
-            </button>
-          </div>
-
-          {saveStatus &&"
             >
               Restablecer valores
             </button>
