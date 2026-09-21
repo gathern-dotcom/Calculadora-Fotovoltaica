@@ -341,7 +341,7 @@ export default function Home() {
           instalacion_detalle: calculationData.installResult || null
         },
         kit_recomendado: calculationData.kitResult?.kit
-          ? `${calculationData.kitResult.kit.id} —${calculationData.kitResult.kit.nombre}`
+          ? `${calculationData.kitResult.kit.id} — ${calculationData.kitResult.kit.nombre}`
           : null,
         kit_cumple: calculationData.kitResult?.cumple || null,
         precio_equipos: calculationData.kitResult?.pricing?.bom?.total || null,
@@ -411,7 +411,12 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Proyecto_FV_${(projectMeta.cliente \vert{}\vert{} 'Sinergy').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+
+    const clientName = projectMeta.cliente ? projectMeta.cliente : 'Sinergy';
+    const cleanClient = clientName.split(' ').join('_');
+    const todayDate = new Date().toISOString().split('T')[0];
+    a.download = 'Proyecto_FV_' + cleanClient + '_' + todayDate + '.json';
+
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -447,27 +452,35 @@ export default function Home() {
   const handleOpenCommercialCard = () => {
     const kit = calculationData.kitResult?.kit;
     const precio = calculationData.kitResult?.pricing?.precioContado || calculationData.kitResult?.pricing?.precioFinal;
-    const texto = encodeURIComponent(
-      `*PROPUESTA COMERCIAL — SINERGY SOLUCIONES INTEGRALES*\n\n` +
-      `👤 *Cliente:* ${projectMeta.cliente || 'Estimado cliente'}\n` +
-      `📍 *Ubicación:* ${projectMeta.ubicacion || 'Colombia'}\n` +
-      `☀️ *Kit Recomendado:* ${kit ? `${kit.id} — ${kit.nombre}` : 'Personalizado'}\n` +
-      `⚡ *Potencia FV:* ${calculationData.calculo.numPaneles} paneles (${calculationData.calculo.numPaneles * siteParams.panelW} Wp)\n` +
-      `🔋 *Baterías:* ${calculationData.calculo.numBatteries} unidades (${calculationData.calculo.bankKwh.toFixed(1)} kWh)\n` +
-      `🔌 *Inversor:* ${calculationData.calculo.inverterW / 1000} kW (120/240V)\n\n` +
-      `💰 *Precio de Contado:* $${Number(precio || 0).toLocaleString('es-CO')} COP\n\n` +
-      `_Propuesta válida por 15 días. Incluye soporte, cableado y protecciones DC._`
-    );
-    const phone = (projectMeta.telefono || '').replace(/\D/g, '');
-    const cleanPhone = phone ? (phone.startsWith('57') ? phone : `57${phone}`) : '';
+    const clientName = projectMeta.cliente ? projectMeta.cliente : 'Estimado cliente';
+    const ubicacion = projectMeta.ubicacion ? projectMeta.ubicacion : 'Colombia';
+    const kitNombre = kit ? `${kit.id} — ${kit.nombre}` : 'Personalizado';
+
+    const lines = [
+      '*PROPUESTA COMERCIAL — SINERGY SOLUCIONES INTEGRALES*',
+      '',
+      `👤 *Cliente:* ${clientName}`,
+      `📍 *Ubicación:* ${ubicacion}`,
+      `☀️ *Kit Recomendado:* ${kitNombre}`,
+      `⚡ *Potencia FV:* ${calculationData.calculo.numPaneles} paneles (${calculationData.calculo.numPaneles * siteParams.panelW} Wp)`,
+      `🔋 *Baterías:* ${calculationData.calculo.numBatteries} unidades (${calculationData.calculo.bankKwh.toFixed(1)} kWh)`,
+      `🔌 *Inversor:* ${calculationData.calculo.inverterW / 1000} kW (120/240V)`,
+      '',
+      `💰 *Precio de Contado:* $${Number(precio || 0).toLocaleString('es-CO')} COP`,
+      '',
+      '_Propuesta válida por 15 días. Incluye soporte, cableado y protecciones DC._'
+    ];
+    const texto = encodeURIComponent(lines.join('\n'));
+    const phone = projectMeta.telefono ? projectMeta.telefono.replace(/\D/g, '') : '';
+    const cleanPhone = phone ? (phone.startsWith('57') ? phone : '57' + phone) : '';
     const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${texto}` : `https://wa.me/?text=${texto}`;
     window.open(url, '_blank');
   };
 
   const handleOpenViability = () => {
-    const nombre = projectMeta.cliente || 'Cliente';
-    const kit = calculationData.kitResult?.kit?.nombre || 'Personalizado';
-    alert(`✓ Solicitud de Viabilidad generada para ${nombre}.\nKit: ${kit} (${calculationData.calculo.inverterW}W).\nSe enviará a verificación técnica.`);
+    const nombre = projectMeta.cliente ? projectMeta.cliente : 'Cliente';
+    const kit = calculationData.kitResult?.kit?.nombre ? calculationData.kitResult.kit.nombre : 'Personalizado';
+    alert('✓ Solicitud de Viabilidad generada para ' + nombre + '. Kit: ' + kit + ' (' + calculationData.calculo.inverterW + 'W). Se enviará a verificación técnica.');
   };
 
   return (
@@ -522,11 +535,6 @@ export default function Home() {
               <span>⚙️</span> Parámetros e Instalación
             </button>
 
-            <              }`}
-            >
-              <span>⚙️</span> Parámetros e Instalación
-            </button>
-
             <button
               type="button"
               onClick={() => setActiveTab('proyectos')}
@@ -549,7 +557,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Contenido de la pestaña activa */}
+      {/* Contenido según la pestaña activa */}
       <div className="flex-1">
         {activeTab === 'dimensionador' && (
           <DimensionadorTab
@@ -569,6 +577,11 @@ export default function Home() {
             advisories={advisories}
             onToggleAdvisory={handleToggleAdvisory}
             onOpenCommercialCard={handleOpenCommercialCard}
+            onOpenViability={handleOpenViability}
+          />
+        )}
+
+                    onOpenCommercialCard={handleOpenCommercialCard}
             onOpenViability={handleOpenViability}
           />
         )}
