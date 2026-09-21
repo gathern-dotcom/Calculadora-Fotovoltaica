@@ -1,12 +1,12 @@
 'use client';
 
-import { downloadCommercialCardPNG } from '../lib/generate-card';
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
 import DimensionadorTab from '../components/DimensionadorTab';
 import ParametrosTab from '../components/ParametrosTab';
 import ProyectosTab from '../components/ProyectosTab';
+import { downloadCommercialCardPNG } from '../lib/generate-card';
 import {
   KITS,
   DEFAULT_BUSINESS_PARAMS,
@@ -137,9 +137,10 @@ export default function Home() {
   const [saveStatus, setSaveStatus] = useState(null);
 
   // =========================================================================
-  // MOTOR DE CÁLCULO EN TIEMPO REAL (REACTIVO)
+  // MOTOR DE CÁLCULO EN TIEMPO REAL (REACTIVO Y BLINDADO TÉCNICAMENTE)
   // =========================================================================
   const calculationData = useMemo(() => {
+    // 1. Consumo diario Wh y Carga Simultánea W
     let tableDailyWh = 0;
     let simultaneousW = 0;
 
@@ -157,7 +158,29 @@ export default function Home() {
 
     const peakLoadW = simultaneousW;
 
-    const rawInverterW = Math.round(peakLoadW * (siteParams.safetyFactor || 1.25));
+    // 2. Potencia FV requerida y número de paneles
+    const fvPowerNeeded =
+      dailyWh / ((siteParams.hsp || 3.8) * (siteParams.efficiency || 0.78));
+
+    let numPaneles = Math.max(1, Math.ceil(fvPowerNeeded / siteParams.panelW));
+    if (appliedAdvisories['reserva-nubosidad']) {
+      numPaneles += 2;
+    }
+
+    // 3. Inversor: Evaluado por Carga Simultánea Y Capacidad de entrada FV
+    let rawInverterW = Math.round(peakLoadW * (siteParams.safetyFactor || 1.25));
+
+    // REGLA DE INGENIERÍA:
+    // El inversor 3kW solo admite hasta 5 paneles (3.000W MPPT).
+    // Si se requieren 6 o más paneles, el inversor mínimo DEBE ser 5kW (48V).
+    if (numPaneles > 12) {
+      rawInverterW = Math.max(rawInverterW, 8000);
+    } else if (numPaneles > 10) {
+      rawInverterW = Math.max(rawInverterW, 6400);
+    } else if (numPaneles > 5) {
+      rawInverterW = Math.max(rawInverterW, 5000);
+    }
+
     let candidateInvW = 3000;
     if (rawInverterW <= 3000) candidateInvW = 3000;
     else if (rawInverterW <= 5000) candidateInvW = 5000;
@@ -167,26 +190,21 @@ export default function Home() {
     else if (rawInverterW <= 12000) candidateInvW = 12000;
     else candidateInvW = 15000;
 
+    // Upgrade por arranque de motores si está activo
     let inverterW = candidateInvW;
     if (appliedAdvisories['motor-inrush']) {
       inverterW = candidateInvW <= 3000 ? 5000 : candidateInvW <= 5000 ? 6400 : 8000;
     }
 
+    // 4. Voltaje del sistema estrictamente sincronizado con el inversor
     const voltage =
       siteParams.voltageOverride === 'auto'
-        ? inverterW <= 4000
+        ? inverterW <= 3000
           ? 24
           : 48
         : parseFloat(siteParams.voltageOverride) || 48;
 
-    const fvPowerNeeded =
-      dailyWh / ((siteParams.hsp || 3.8) * (siteParams.efficiency || 0.78));
-
-    let numPaneles = Math.max(1, Math.ceil(fvPowerNeeded / siteParams.panelW));
-    if (appliedAdvisories['reserva-nubosidad']) {
-      numPaneles += 2;
-    }
-
+    // 5. Dimensionamiento del banco de baterías
     const hourlyWh = dailyWh / 24;
     const nightWh = hourlyWh * (siteParams.autonomyHours || 14);
     const bankKwh = nightWh / 1000 / (siteParams.dod || 0.95);
@@ -206,27 +224,36 @@ export default function Home() {
     }
     const numBatteries = batteryCalc.qty;
 
+    // 6. Selección dinámica de Kit Recomendado (evalúa paneles, baterías e inversor)
     const kitResult = recommendKit(numPaneles * siteParams.panelW, bankKwh, inverterW);
     if (kitResult?.kit) {
       kitResult.pricing = calcKitPricing(kitResult.kit);
     }
 
+    // 7. Sistema Optimizado (Ingeniería a la medida con voltaje estrictamente blindado)
     const optimizedSolution = findOptimizedSolution(numPaneles, null, inverterW);
     let optimizedResult = null;
     if (optimizedSolution) {
-      const batteryOpt = findCheapestBattery(bankKwh, voltage, inverterW);
+      const optInverterW = optimizedSolution.totalInverterW || optimizedSolution.inverter.w;
+      // El voltaje de batería del optimizado se deriva 100% del inversor seleccionado
+      const optVoltage = optInverterW <= 3000 ? 24 : 48;
+      
+      const batteryOpt = findCheapestBattery(bankKwh, optVoltage, optInverterW);
       const bomOpt = calcOptimizedBOM(optimizedSolution, siteParams.panelW, batteryOpt);
       const pricingOpt = calcOptimizedPrice(bomOpt, optimizedSolution);
       optimizedResult = {
         ...optimizedSolution,
         bom: bomOpt,
         pricing: pricingOpt,
-        batteryOpt
+        batteryOpt,
+        voltage: optVoltage
       };
     }
 
+    // 8. Costos de Instalación y Viáticos
     const installResult = calcInstallCost(projectInstallParams, businessParams);
 
+    // 9. Consolidado Financiero del Proyecto
     const equiposPrecioFinal = kitResult?.pricing?.precioContado || kitResult?.pricing?.precioFinal || 0;
     const equiposBOM = kitResult?.pricing?.bom?.total || 0;
     const projectTotals = calcProjectTotals(
@@ -263,12 +290,14 @@ export default function Home() {
     appliedAdvisories
   ]);
 
+  // Sincronizar voltaje en siteParams cuando está en 'auto'
   useEffect(() => {
     if (siteParams.voltageOverride === 'auto' && calculationData.calculo.voltage !== siteParams.voltage) {
       setSiteParams(p => ({ ...p, voltage: calculationData.calculo.voltage }));
     }
   }, [calculationData.calculo.voltage, siteParams.voltageOverride, siteParams.voltage]);
 
+  // Asesor de ingeniería (Sinergy Advisor)
   const advisories = useMemo(() => {
     return generateEngineeringAdvisories(
       appliances,
@@ -450,35 +479,36 @@ export default function Home() {
     setSaveStatus(null);
   };
 
- const handleOpenCommercialCard = () => {
-    // 1. Descarga inmediatamente la imagen PNG de la ficha en la computadora del asesor
+  // Descarga automática de la ficha comercial gráfica (PNG) y apertura de WhatsApp
+  const handleOpenCommercialCard = () => {
+    // 1. Descarga automática de la imagen PNG con datos actuales
     downloadCommercialCardPNG(projectMeta, calculationData.calculo, calculationData.kitResult, siteParams);
 
-    // 2. Abre WhatsApp con el texto listo para enviar junto con la imagen descargada
+    // 2. Abre WhatsApp con el mensaje estructurado
     const kit = calculationData.kitResult?.kit;
     const precio = calculationData.kitResult?.pricing?.precioCredito || calculationData.kitResult?.pricing?.precioFinal;
     const clientName = projectMeta.cliente ? projectMeta.cliente : 'Estimado cliente';
     const ubicacion = projectMeta.ubicacion ? projectMeta.ubicacion : 'Colombia';
-    const kitNombre = kit ? (kit.id + ' — ' + kit.nombre) : 'Personalizado';
+    const kitNombre = kit ? `${kit.id} — ${kit.nombre}` : 'Personalizado';
 
     const lines = [
       '*PROPUESTA COMERCIAL — SINERGY SOLUCIONES INTEGRALES*',
       '',
-      '👤 *Cliente:* ' + clientName,
-      '📍 *Ubicación:* ' + ubicacion,
-      '☀️ *Kit Recomendado:* ' + kitNombre,
-      '⚡ *Potencia FV:* ' + calculationData.calculo.numPaneles + ' paneles (' + (calculationData.calculo.numPaneles * siteParams.panelW) + ' Wp)',
-      '🔋 *Baterías:* ' + calculationData.calculo.numBatteries + ' unidades (' + calculationData.calculo.bankKwh.toFixed(1) + ' kWh)',
-      '🔌 *Inversor:* ' + (calculationData.calculo.inverterW / 1000) + ' kW (120/240V)',
+      `👤 *Cliente:* ${clientName}`,
+      `📍 *Ubicación:* ${ubicacion}`,
+      `☀️ *Kit Recomendado:* ${kitNombre}`,
+      `⚡ *Potencia FV:* ${calculationData.calculo.numPaneles} paneles (${calculationData.calculo.numPaneles * siteParams.panelW} Wp)`,
+      `🔋 *Baterías:* ${calculationData.calculo.numBatteries} unidades (${calculationData.calculo.bankKwh.toFixed(1)} kWh)`,
+      `🔌 *Inversor:* ${calculationData.calculo.inverterW / 1000} kW (120/240V)`,
       '',
-      '💰 *Precio Normal (Llave en Mano):* $' + Number(precio || 0).toLocaleString('es-CO') + ' COP',
+      `💰 *Precio Normal (Llave en Mano):* $${Number(precio || 0).toLocaleString('es-CO')} COP`,
       '',
       '_Propuesta oficial generada por Sinergy Soluciones Integrales._'
     ];
     const texto = encodeURIComponent(lines.join('\n'));
     const phone = projectMeta.telefono ? projectMeta.telefono.replace(/\D/g, '') : '';
-    const cleanPhone = phone ? (phone.startsWith('57') ? phone : '57' + phone) : '';
-    const url = cleanPhone ? ('https://wa.me/' + cleanPhone + '?text=' + texto) : ('https://wa.me/?text=' + texto);
+    const cleanPhone = phone ? (phone.startsWith('57') ? phone : `57${phone}`) : '';
+    const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${texto}` : `https://wa.me/?text=${texto}`;
     window.open(url, '_blank');
   };
 
@@ -550,7 +580,7 @@ export default function Home() {
               }`}
             >
               <span>📁</span> Proyectos y CRM
-              {proyectos.length > 0 && (
+              {proyectos.length !== 0 && (
                 <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
                   activeTab === 'proyectos' ? 'bg-white text-brand-blue font-bold' : 'bg-brand-blue text-white'
                 }`}>
@@ -562,7 +592,7 @@ export default function Home() {
         </div>
       </div>
 
-{/* Contenido de la pestaña activa */}
+      {/* Contenido según la pestaña activa */}
       <div className="flex-1">
         {activeTab === 'dimensionador' && (
           <DimensionadorTab
