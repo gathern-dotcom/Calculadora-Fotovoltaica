@@ -1,5 +1,6 @@
 'use client';
 
+import { downloadCommercialCardPNG } from '../lib/generate-card';
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
