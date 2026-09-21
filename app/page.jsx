@@ -557,7 +557,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Contenido según la pestaña activa */}
+{/* Contenido de la pestaña activa */}
       <div className="flex-1">
         {activeTab === 'dimensionador' && (
           <DimensionadorTab
@@ -577,11 +577,6 @@ export default function Home() {
             advisories={advisories}
             onToggleAdvisory={handleToggleAdvisory}
             onOpenCommercialCard={handleOpenCommercialCard}
-            onOpenViability={handleOpenViability}
-          />
-        )}
-
-                    onOpenCommercialCard={handleOpenCommercialCard}
             onOpenViability={handleOpenViability}
           />
         )}
