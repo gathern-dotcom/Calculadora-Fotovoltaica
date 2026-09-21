@@ -450,31 +450,35 @@ export default function Home() {
     setSaveStatus(null);
   };
 
-  const handleOpenCommercialCard = () => {
+ const handleOpenCommercialCard = () => {
+    // 1. Descarga inmediatamente la imagen PNG de la ficha en la computadora del asesor
+    downloadCommercialCardPNG(projectMeta, calculationData.calculo, calculationData.kitResult, siteParams);
+
+    // 2. Abre WhatsApp con el texto listo para enviar junto con la imagen descargada
     const kit = calculationData.kitResult?.kit;
-    const precio = calculationData.kitResult?.pricing?.precioContado || calculationData.kitResult?.pricing?.precioFinal;
+    const precio = calculationData.kitResult?.pricing?.precioCredito || calculationData.kitResult?.pricing?.precioFinal;
     const clientName = projectMeta.cliente ? projectMeta.cliente : 'Estimado cliente';
     const ubicacion = projectMeta.ubicacion ? projectMeta.ubicacion : 'Colombia';
-    const kitNombre = kit ? `${kit.id} — ${kit.nombre}` : 'Personalizado';
+    const kitNombre = kit ? (kit.id + ' — ' + kit.nombre) : 'Personalizado';
 
     const lines = [
       '*PROPUESTA COMERCIAL — SINERGY SOLUCIONES INTEGRALES*',
       '',
-      `👤 *Cliente:* ${clientName}`,
-      `📍 *Ubicación:* ${ubicacion}`,
-      `☀️ *Kit Recomendado:* ${kitNombre}`,
-      `⚡ *Potencia FV:* ${calculationData.calculo.numPaneles} paneles (${calculationData.calculo.numPaneles * siteParams.panelW} Wp)`,
-      `🔋 *Baterías:* ${calculationData.calculo.numBatteries} unidades (${calculationData.calculo.bankKwh.toFixed(1)} kWh)`,
-      `🔌 *Inversor:* ${calculationData.calculo.inverterW / 1000} kW (120/240V)`,
+      '👤 *Cliente:* ' + clientName,
+      '📍 *Ubicación:* ' + ubicacion,
+      '☀️ *Kit Recomendado:* ' + kitNombre,
+      '⚡ *Potencia FV:* ' + calculationData.calculo.numPaneles + ' paneles (' + (calculationData.calculo.numPaneles * siteParams.panelW) + ' Wp)',
+      '🔋 *Baterías:* ' + calculationData.calculo.numBatteries + ' unidades (' + calculationData.calculo.bankKwh.toFixed(1) + ' kWh)',
+      '🔌 *Inversor:* ' + (calculationData.calculo.inverterW / 1000) + ' kW (120/240V)',
       '',
-      `💰 *Precio de Contado:* $${Number(precio || 0).toLocaleString('es-CO')} COP`,
+      '💰 *Precio Normal (Llave en Mano):* $' + Number(precio || 0).toLocaleString('es-CO') + ' COP',
       '',
-      '_Propuesta válida por 15 días. Incluye soporte, cableado y protecciones DC._'
+      '_Propuesta oficial generada por Sinergy Soluciones Integrales._'
     ];
     const texto = encodeURIComponent(lines.join('\n'));
     const phone = projectMeta.telefono ? projectMeta.telefono.replace(/\D/g, '') : '';
     const cleanPhone = phone ? (phone.startsWith('57') ? phone : '57' + phone) : '';
-    const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${texto}` : `https://wa.me/?text=${texto}`;
+    const url = cleanPhone ? ('https://wa.me/' + cleanPhone + '?text=' + texto) : ('https://wa.me/?text=' + texto);
     window.open(url, '_blank');
   };
 
