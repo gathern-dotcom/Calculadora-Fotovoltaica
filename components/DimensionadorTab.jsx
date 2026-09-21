@@ -45,14 +45,14 @@ export default function DimensionadorTab({
   const [customConfig, setCustomConfig] = useState({
     baseKitId: 'K5',
     panelW: 625,
-    panelQty: 10,
+    panelQty: 9,
     inverterModel: 'Inversor FOC Energy, 6.4KW, 48V, 120/240V',
     inverterQty: 1,
     inverterW: 6400,
-    batteryModel: 'Batería LFP FOC Energy, 48V, 11 kWh',
+    batteryModel: 'Batería LFP FOC Energy, 48V, 11 KWh',
     batteryQty: 1,
-    batteryKwh: 11.78,
-    combinerModel: 'Combiner Box DC Suntree 5 in 1 out',
+    batteryKwh: 11.0,
+    combinerModel: 'Combiner Box DC Suntree 3 in 1 out',
     combinerQty: 1,
     soporteQty: 5,
     cableMeters: 74
@@ -80,7 +80,7 @@ export default function DimensionadorTab({
       inverterW: inv.w,
       batteryModel: bat.value,
       batteryQty: kit.bateriaCant,
-      batteryKwh: bat.kwh,
+      batteryKwh: kit.bateriaKwhUnit,
       combinerModel: comb.value,
       combinerQty: 1,
       soporteQty: kit.soporte,
@@ -166,12 +166,11 @@ export default function DimensionadorTab({
 
   return (
     <div className="w-full font-sans">
-      {/* SECCIÓN PRINCIPAL EN GRID 2 COLUMNAS */}
       <main className="max-w-[1280px] mx-auto p-4 sm:p-7 grid grid-cols-1 lg:grid-cols-[minmax(340px,460px)_1fr] gap-6">
         
         {/* COLUMNA IZQUIERDA: ENTRADAS */}
         <div className="space-y-5">
-          {/* Tarjeta de Consumo */}
+          {/* Consumo */}
           <section className="card">
             <h2 className="section-title">Consumo eléctrico</h2>
 
@@ -207,7 +206,7 @@ export default function DimensionadorTab({
 
             <div className="border-t border-border pt-3 mt-3">
               <p className="text-[11.5px] text-brand-muted mb-3 leading-relaxed">
-                Esta tabla siempre se usa para calcular la <strong>carga simultánea</strong> (dimensiona el inversor), sin importar el interruptor de arriba. Ajusta los equipos a los reales del proyecto para que el inversor quede bien calculado.
+                Esta tabla siempre se usa para calcular la <strong>carga simultánea</strong> (dimensiona el inversor). Ajusta los equipos reales del proyecto:
               </p>
 
               <div className="overflow-x-auto">
@@ -308,14 +307,14 @@ export default function DimensionadorTab({
             </div>
           </section>
 
-          {/* Tarjeta de Parámetros del Sitio */}
+          {/* Parámetros del Sitio */}
           <section className="card">
             <h2 className="section-title">Parámetros del sitio y del sistema</h2>
 
             <div className="field-row">
               <label htmlFor="panelW">
                 Panel solar
-                <span className="hint">Según disponibilidad de inventario actual</span>
+                <span className="hint">Catálogo de inventario oficial</span>
               </label>
               <select
                 id="panelW"
@@ -324,8 +323,8 @@ export default function DimensionadorTab({
                   setSiteParams(p => ({ ...p, panelW: parseFloat(e.target.value) }))
                 }
               >
-                <option value="585">585 W</option>
-                <option value="625">625 W</option>
+                <option value="585">585 W (Monofacial Luxen)</option>
+                <option value="625">625 W (Monofacial Luxen)</option>
               </select>
             </div>
 
@@ -385,7 +384,6 @@ export default function DimensionadorTab({
               </span>
             </div>
 
-            {/* Parámetros Avanzados */}
             <div className="border-t border-border pt-3 mt-3">
               <div className="flex items-center gap-2 text-xs text-brand-muted mb-3 cursor-pointer">
                 <input
@@ -406,7 +404,7 @@ export default function DimensionadorTab({
                   <div className="field-row">
                     <label>
                       Horas de sol pico (HSP)
-                      <span className="hint">kWh/m²/día de tu zona</span>
+                      <span className="hint">kWh/m²/día de la región</span>
                     </label>
                     <input
                       type="number"
@@ -421,7 +419,7 @@ export default function DimensionadorTab({
                   <div className="field-row">
                     <label>
                       Eficiencia global del sistema
-                      <span className="hint">Pérdidas térmicas, MPPT, ciclado litio y cableado</span>
+                      <span className="hint">Pérdidas térmicas, ciclado litio y cableado</span>
                     </label>
                     <select
                       value={siteParams.efficiency}
@@ -437,7 +435,7 @@ export default function DimensionadorTab({
                   <div className="field-row">
                     <label>
                       Química de batería (DoD)
-                      <span className="hint">Catálogo Sinergy usa LFP certificado a ≥95%</span>
+                      <span className="hint">Litio LFP certificado a ≥95%</span>
                     </label>
                     <select
                       value={siteParams.dod}
@@ -445,7 +443,7 @@ export default function DimensionadorTab({
                         setSiteParams(p => ({ ...p, dod: parseFloat(e.target.value) }))
                       }
                     >
-                      <option value="0.95">Litio LFP (95% DoD Datasheet)</option>
+                      <option value="0.95">Litio LFP (95% DoD)</option>
                       <option value="0.90">Litio LFP (90% DoD Conservador)</option>
                       <option value="0.80">AGM/Gel (80% DoD)</option>
                     </select>
@@ -474,10 +472,8 @@ export default function DimensionadorTab({
           </section>
         </div>
 
-        {/* COLUMNA DERECHA: ASISTENTE IA Y RESULTADOS */}
+        {/* COLUMNA DERECHA: RESULTADOS */}
         <div className="space-y-5">
-          
-          {/* Asistente IA */}
           <section className="card">
             <h2 className="section-title">✨ Analizar equipos con IA</h2>
             <p className="text-xs text-brand-muted mb-2">
@@ -485,7 +481,7 @@ export default function DimensionadorTab({
             </p>
             <textarea
               rows="3"
-              placeholder="Ej: tiene una nevera grande, dos bombillos en la sala, un televisor que usa en las noches, y una bomba de agua que enciende una hora al día..."
+              placeholder="Ej: tiene una nevera grande, dos bombillos en la sala, un televisor en las noches y una bomba de agua de 1 HP..."
               value={aiText}
               onChange={e => setAiText(e.target.value)}
               className="w-full text-xs font-sans mb-2"
@@ -515,7 +511,6 @@ export default function DimensionadorTab({
             </div>
           </section>
 
-          {/* Resultado del Dimensionamiento */}
           <section className="card">
             <h2 className="section-title">Resultado del dimensionamiento</h2>
 
@@ -547,91 +542,17 @@ export default function DimensionadorTab({
               <div className="kpi col-span-2 sm:col-span-2">
                 <div className="kpi-label">Inversor mínimo</div>
                 <div className="kpi-value">{fmt(calculo.inverterW)}<span className="unit">W</span></div>
-                <div className="kpi-sub">Redondeado al estándar del catálogo (según carga simultánea)</div>
+                <div className="kpi-sub">Redondeado al estándar del catálogo</div>
               </div>
-            </div>
-
-            {/* Esquema SVG con las 5 etapas (Incluye Inversor) */}
-            <div className="mt-5 pt-4 border-t border-border">
-              <svg viewBox="0 0 700 160" className="w-full h-auto block" xmlns="http://www.w3.org/2000/svg">
-                {/* Líneas de flujo animadas */}
-                <line x1="85" y1="60" x2="162" y2="60" stroke="#C9C9C9" strokeWidth="2" className="flow-dash" />
-                <line x1="235" y1="60" x2="310" y2="60" stroke="#C9C9C9" strokeWidth="2" className="flow-dash" />
-                <line x1="380" y1="60" x2="455" y2="60" stroke="#C9C9C9" strokeWidth="2" className="flow-dash" />
-                <line x1="525" y1="60" x2="600" y2="60" stroke="#C9C9C9" strokeWidth="2" className="flow-dash" />
-
-                {/* 1. SOL */}
-                <g id="sunIcon">
-                  <circle cx="50" cy="55" r="26" fill="#FFE600" opacity="0.25" />
-                  <circle cx="50" cy="55" r="20" fill="#FFE600" opacity="0.6" />
-                  <circle cx="50" cy="55" r="15" fill="#FF8000" />
-                  <g stroke="#FF8000" strokeWidth="2.2" strokeLinecap="round">
-                    <line x1="50" y1="26" x2="50" y2="20" />
-                    <line x1="50" y1="84" x2="50" y2="90" />
-                    <line x1="21" y1="55" x2="15" y2="55" />
-                    <line x1="79" y1="55" x2="85" y2="55" />
-                    <line x1="29" y1="34" x2="25" y2="30" />
-                    <line x1="71" y1="76" x2="75" y2="80" />
-                    <line x1="29" y1="76" x2="25" y2="80" />
-                    <line x1="71" y1="34" x2="75" y2="30" />
-                  </g>
-                </g>
-                <text x="50" y="105" textAnchor="middle" className="text-[11px] font-mono fill-brand-muted">SOL</text>
-                <text x="50" y="122" textAnchor="middle" className="text-[13px] font-semibold fill-brand-text">{siteParams.hsp} HSP</text>
-
-                {/* 2. PANELES */}
-                <g>
-                  <rect x="171" y="36" width="58" height="46" rx="3" fill="#F8FAFC" stroke="#0040CC" strokeWidth="1.5" />
-                  <line x1="190.3" y1="36" x2="190.3" y2="82" stroke="#CBD5E1" strokeWidth="1" />
-                  <line x1="209.6" y1="36" x2="209.6" y2="82" stroke="#CBD5E1" strokeWidth="1" />
-                  <line x1="171" y1="50.6" x2="229" y2="50.6" stroke="#CBD5E1" strokeWidth="1" />
-                  <line x1="171" y1="65.3" x2="229" y2="65.3" stroke="#CBD5E1" strokeWidth="1" />
-                </g>
-                <text x="200" y="105" textAnchor="middle" className="text-[11px] font-mono fill-brand-muted">PANELES</text>
-                <text x="200" y="122" textAnchor="middle" className="text-[13px] font-semibold fill-brand-text">{calculo.numPaneles} un.</text>
-
-                {/* 3. BATERÍAS */}
-                <g>
-                  <rect x="339" y="33" width="6" height="7" fill="#FF8000" />
-                  <rect x="317" y="40" width="56" height="38" rx="3" fill="#F8FAFC" stroke="#FF8000" strokeWidth="1.5" />
-                  <rect x="323" y="46" width="12" height="26" fill="#FF8000" opacity="0.85" rx="1" />
-                  <rect x="339" y="46" width="12" height="26" fill="#FF8000" opacity="0.55" rx="1" />
-                  <rect x="355" y="46" width="12" height="26" fill="#FF8000" opacity="0.3" rx="1" />
-                </g>
-                <text x="345" y="105" textAnchor="middle" className="text-[11px] font-mono fill-brand-muted">BATERÍAS</text>
-                <text x="345" y="122" textAnchor="middle" className="text-[13px] font-semibold fill-brand-orange">{calculo.numBatteries} un.</text>
-
-                {/* 4. INVERSOR */}
-                <g>
-                  <rect x="462" y="36" width="56" height="46" rx="4" fill="#F8FAFC" stroke="#0040CC" strokeWidth="1.5" />
-                  <rect x="470" y="43" width="40" height="13" rx="2" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="1" />
-                  <text x="490" y="52.5" textAnchor="middle" fontSize="7.5" fontFamily="monospace" fill="#0040CC" fontWeight="bold">AC 120/240V</text>
-                  <path d="M473 68 Q479 61 485 68 T497 68" fill="none" stroke="#FF8000" strokeWidth="1.6" strokeLinecap="round" />
-                  <circle cx="508" cy="68" r="2.5" fill="#149E60" />
-                </g>
-                <text x="490" y="105" textAnchor="middle" className="text-[11px] font-mono fill-brand-muted">INVERSOR</text>
-                <text x="490" y="122" textAnchor="middle" className="text-[13px] font-semibold fill-brand-blue">{fmt(calculo.inverterW)} W</text>
-
-                {/* 5. CARGA */}
-                <g id="loadBulb">
-                  <circle cx="635" cy="55" r="16" fill="none" stroke="#8C8C8C" strokeWidth="1.5" id="bulbGlow" />
-                  <path d="M626 50a9 9 0 1 1 18 0c0 5-4 7-5 11h-8c-1-4-5-6-5-11z" fill="#ECECEC" stroke="#8C8C8C" strokeWidth="1.3" id="bulbBody" />
-                  <path d="M631 55 l3 -6 l2 4 l3 -5" fill="none" stroke="#8C8C8C" strokeWidth="1" strokeLinecap="round" id="bulbFilament" />
-                  <rect x="630" y="61" width="10" height="3" rx="1" fill="#C9C9C9" />
-                  <rect x="631.5" y="64" width="7" height="2.5" rx="1" fill="#C9C9C9" />
-                </g>
-                <text x="635" y="105" textAnchor="middle" className="text-[11px] font-mono fill-brand-muted">CARGA</text>
-                <text x="635" y="122" textAnchor="middle" className="text-[13px] font-semibold fill-brand-text">{fmt(calculo.peakLoadW)} W</text>
-              </svg>
             </div>
           </section>
         </div>
       </main>
 
-      {/* SECCIÓN INFERIOR: ASESOR DE INGENIERÍA, PROPUESTAS Y ACCIONES */}
+      {/* SECCIÓN INFERIOR: ASESOR, PERSONALIZADOR Y PROPUESTAS CON 3 PRECIOS */}
       <div className="max-w-[1280px] mx-auto px-4 sm:px-7 pb-8 space-y-6">
         
-        {/* ASESOR DE INGENIERÍA EN VIVO (OBSERVACIONES TÉCNICAS INTERACTIVAS) */}
+        {/* ASESOR DE INGENIERÍA */}
         {advisories && advisories.length > 0 && (
           <section className="card border border-brand-blue/30 bg-blue-50/30">
             <div className="flex flex-wrap items-center justify-between border-b border-blue-100 pb-3 mb-3 gap-2">
@@ -651,9 +572,7 @@ export default function DimensionadorTab({
                 <div
                   key={adv.id}
                   className={`p-4 rounded-lg border transition-all ${
-                    adv.aplicado
-                      ? 'bg-white border-brand-success shadow-xs'
-                      : 'bg-white border-orange-200'
+                    adv.aplicado ? 'bg-white border-brand-success shadow-xs' : 'bg-white border-orange-200'
                   }`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
@@ -663,7 +582,7 @@ export default function DimensionadorTab({
                           adv.aplicado ? 'bg-green-100 text-brand-success' : 'bg-orange-100 text-brand-orange'
                         }`}
                       >
-                        {adv.aplicado ? '✓ Recomendación Aplicada a la Cotización' : '⚠ Sugerencia de Confiabilidad'}
+                        {adv.aplicado ? '✓ Recomendación Aplicada' : '⚠ Sugerencia de Confiabilidad'}
                       </span>
                       <h3 className="text-sm font-semibold text-brand-text mt-1 m-0">
                         {adv.titulo}
@@ -679,7 +598,7 @@ export default function DimensionadorTab({
                           : 'bg-brand-blue hover:bg-brand-blue-dark text-white'
                       }`}
                     >
-                      {adv.aplicado ? '↩ Revertir a propuesta estándar' : '✓ Aplicar recomendación de ingeniería'}
+                      {adv.aplicado ? '↩ Revertir a propuesta estándar' : '✓ Aplicar recomendación'}
                     </button>
                   </div>
 
@@ -696,9 +615,7 @@ export default function DimensionadorTab({
           </section>
         )}
 
-        {/* ======================================================== */}
-        {/* PERSONALIZADOR MANUAL A PARTIR DE UN KIT (COLAPSABLE)     */}
-        {/* ======================================================== */}
+        {/* PERSONALIZADOR MANUAL COLAPSABLE */}
         <section className="card border border-dashed border-brand-blue/40 bg-gradient-to-b from-blue-50/20 to-transparent transition-all">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -706,7 +623,7 @@ export default function DimensionadorTab({
                 <span>🛠</span> Personalizador a la medida (Modificar todo manualmente)
               </h2>
               <p className="text-xs text-brand-muted m-0">
-                Ajuste manual y configuración avanzada de componentes para asesores técnicos.
+                Ajuste manual de componentes para cotizaciones especiales o consumos industriales.
               </p>
             </div>
             <button
@@ -743,10 +660,8 @@ export default function DimensionadorTab({
                 </div>
               </div>
 
-              {/* Formulario de selección y ajuste de componentes */}
+              {/* Formulario de componentes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
-                
-                {/* 1. Paneles */}
                 <div className="bg-white border border-border rounded-lg p-3 space-y-2">
                   <div className="flex justify-between items-center text-xs font-semibold text-brand-text">
                     <span>☀️ Paneles Solares</span>
@@ -777,7 +692,6 @@ export default function DimensionadorTab({
                   </div>
                 </div>
 
-                {/* 2. Inversor */}
                 <div className="bg-white border border-border rounded-lg p-3 space-y-2">
                   <div className="flex justify-between items-center text-xs font-semibold text-brand-text">
                     <span>⚡ Inversor</span>
@@ -817,7 +731,6 @@ export default function DimensionadorTab({
                   </div>
                 </div>
 
-                {/* 3. Baterías LFP */}
                 <div className="bg-white border border-border rounded-lg p-3 space-y-2">
                   <div className="flex justify-between items-center text-xs font-semibold text-brand-text">
                     <span>🔋 Baterías Litio LFP</span>
@@ -832,7 +745,7 @@ export default function DimensionadorTab({
                         setCustomConfig(p => ({
                           ...p,
                           batteryModel: e.target.value,
-                          batteryKwh: bat ? bat.kwh : 11.78
+                          batteryKwh: bat ? bat.kwh : 11.0
                         }));
                       }}
                       className="w-full text-xs"
@@ -857,7 +770,6 @@ export default function DimensionadorTab({
                   </div>
                 </div>
 
-                {/* 4. Combiner Box */}
                 <div className="bg-white border border-border rounded-lg p-3 space-y-2">
                   <span className="text-xs font-semibold text-brand-text block">🛡 Protección Combiner Box</span>
                   <div>
@@ -886,13 +798,11 @@ export default function DimensionadorTab({
                   </div>
                 </div>
 
-                {/* 5. Soportes de Techo */}
                 <div className="bg-white border border-border rounded-lg p-3 space-y-2">
                   <span className="text-xs font-semibold text-brand-text block">🏗 Estructura de Montaje</span>
                   <div className="field-row mb-0">
                     <label className="text-[11px] text-brand-muted">
                       Kits soporte (2 paneles c/u):
-                      <span className="hint">Sugerido para {customConfig.panelQty} paneles: {Math.ceil(customConfig.panelQty / 2)} kits</span>
                     </label>
                     <input
                       type="number"
@@ -904,13 +814,11 @@ export default function DimensionadorTab({
                   </div>
                 </div>
 
-                {/* 6. Cableado Solar */}
                 <div className="bg-white border border-border rounded-lg p-3 space-y-2">
                   <span className="text-xs font-semibold text-brand-text block">🔌 Cable Fotovoltaico 6mm</span>
                   <div className="field-row mb-0">
                     <label className="text-[11px] text-brand-muted">
                       Metros totales de cable:
-                      <span className="hint">Positivo + Negativo</span>
                     </label>
                     <input
                       type="number"
@@ -924,33 +832,36 @@ export default function DimensionadorTab({
                 </div>
               </div>
 
-              {/* Resumen del Sistema Personalizado */}
+              {/* Modalidad de precios para Sistema Personalizado */}
               <div className="bg-white border border-border rounded-lg p-4 shadow-xs">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                  <div>
-                    <span className="text-[11px] font-mono text-brand-muted uppercase block">Costo BOM Equipos (U10)</span>
-                    <span className="text-lg font-bold text-brand-text">${fmt(customResult.bom.total)} COP</span>
-                    <span className="text-[11px] text-brand-muted block mt-0.5">Suma directa con precios mayoristas</span>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-mono text-brand-muted uppercase block">Fórmula de Escala Aplicada</span>
-                    <span className="text-xs font-bold text-brand-text font-mono">
-                      U10 × {customResult.formula.mult} + ${fmt(customResult.formula.fijo1 + customResult.formula.fijo2)}
+                <div className="text-[11px] font-mono uppercase font-bold text-brand-muted mb-3 tracking-wider">
+                  Modalidades de Precio del Sistema Personalizado:
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="bg-gray-50 p-3 rounded border border-border">
+                    <span className="text-[11px] text-brand-muted block">Precio Normal (Crédito)</span>
+                    <span className="text-base font-bold text-brand-text font-mono block mt-1">
+                      ${fmt(customResult.precioCredito)} COP
                     </span>
-                    <span className="text-[11px] text-brand-muted block mt-0.5">Asignada por potencia de {customResult.totalInverterW / 1000} kW</span>
+                    <span className="text-[10px] text-brand-muted block">Recargo {(customResult.factorCredito - 1) * 100}%</span>
                   </div>
 
-                  <div className="bg-blue-50/60 p-3 rounded-lg border border-blue-100 flex flex-col justify-center space-y-1">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-[11px] font-mono text-brand-muted uppercase">Precio Lista:</span>
-                      <span className="text-xs font-semibold text-brand-muted line-through">${fmt(customResult.precioFinal)} COP</span>
-                    </div>
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-[11px] font-mono text-brand-blue uppercase font-bold">Con Descuento:</span>
-                      <span className="text-xl font-bold text-brand-blue font-mono">${fmt(customResult.precioConDescuento)} COP</span>
-                    </div>
-                    <span className="text-[10.5px] text-brand-muted block">Ahorro: ${fmt(customResult.precioFinal - customResult.precioConDescuento)} COP</span>
+                  <div className="bg-blue-50/70 p-3 rounded border border-blue-200">
+                    <span className="text-[11px] text-brand-blue font-bold uppercase block">Precio de Contado</span>
+                    <span className="text-lg font-bold text-brand-blue font-mono block mt-1">
+                      ${fmt(customResult.precioContado)} COP
+                    </span>
+                    <span className="text-[10px] text-brand-muted block">Tarifa base 2026</span>
+                  </div>
+
+                  <div className="bg-green-50/70 p-3 rounded border border-green-200">
+                    <span className="text-[11px] text-brand-success font-bold uppercase block">Con Código Referido</span>
+                    <span className="text-lg font-bold text-brand-success font-mono block mt-1">
+                      ${fmt(customResult.precioReferido)} COP
+                    </span>
+                    <span className="text-[10px] text-brand-success font-semibold block">
+                      Ahorro: ${fmt(customResult.ahorroReferido)} COP
+                    </span>
                   </div>
                 </div>
               </div>
@@ -958,7 +869,7 @@ export default function DimensionadorTab({
           )}
         </section>
 
-        {/* COMPARATIVA: KIT RECOMENDADO Y SISTEMA OPTIMIZADO */}
+        {/* COMPARATIVA: KIT RECOMENDADO Y SISTEMA OPTIMIZADO (CON LOS 3 PRECIOS) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           
           {/* Kit Recomendado */}
@@ -981,31 +892,49 @@ export default function DimensionadorTab({
                   <li><span className="k">Inversor</span><span className="v">{kitResult.kit.inversor}</span></li>
                   <li><span className="k">Baterías</span><span className="v">{kitResult.kit.bateriaCant} un · {kitResult.kit.bateriaModelo} · {fmt(kitResult.kit.totalBateriaKwh, 1)} kWh total</span></li>
                   <li><span className="k">Protección DC</span><span className="v">{kitResult.kit.proteccionDC}</span></li>
-                  <li><span className="k">Soporte techo</span><span className="v">{kitResult.kit.soporte} un (2 paneles c/u)</span></li>
+                  <li><span className="k">Soporte techo</span><span className="v">{kitResult.kit.soporte} kits (2 paneles c/u)</span></li>
                   <li><span className="k">Cable fotovoltaico</span><span className="v">{kitResult.kit.cable} m</span></li>
                 </ul>
 
-                {kitResult.pricing?.precioFinal && (
-                  <ul className="kit-specs mt-3 pt-2 border-t border-border space-y-1">
-                    <li>
-                      <span className="k">Precio de lista (sin descuento)</span>
-                      <span className="v text-brand-muted line-through text-xs">${fmt(kitResult.pricing.precioFinal)} COP</span>
-                    </li>
-                    <li>
-                      <span className="k font-semibold text-brand-success">Precio con descuento</span>
-                      <span className="v text-brand-success font-bold text-base">
-                        ${fmt(kitResult.pricing.precioConDescuento || kitResult.pricing.precioFinal)} COP
-                      </span>
-                    </li>
-                    {kitResult.pricing.precioConDescuento && kitResult.pricing.precioFinal > kitResult.pricing.precioConDescuento && (
-                      <li>
-                        <span className="k text-[11px] text-brand-muted">Ahorro comercial</span>
-                        <span className="v text-brand-muted font-mono text-xs">
-                          -${fmt(kitResult.pricing.precioFinal - kitResult.pricing.precioConDescuento)} COP
+                {/* LAS 3 MODALIDADES DE PRECIO DEL KIT */}
+                {kitResult.pricing?.precioContado && (
+                  <div className="mt-4 pt-3 border-t border-border">
+                    <div className="text-[11px] font-mono uppercase font-bold text-brand-muted mb-2 tracking-wider">
+                      Modalidades de Pago Oficiales:
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div className="bg-gray-50 p-2.5 rounded border border-border flex flex-col justify-between">
+                        <span className="text-[11px] font-semibold text-brand-muted">Normal (Crédito)</span>
+                        <div className="text-sm font-bold text-brand-text font-mono mt-1">
+                          ${fmt(kitResult.pricing.precioCredito)} COP
+                        </div>
+                        <span className="text-[9.5px] text-brand-muted">Financiado</span>
+                      </div>
+
+                      <div className="bg-blue-50/70 p-2.5 rounded border border-blue-200 flex flex-col justify-between">
+                        <span className="text-[11px] font-bold text-brand-blue uppercase">Contado</span>
+                        <div className="text-base font-bold text-brand-blue font-mono mt-1">
+                          ${fmt(kitResult.pricing.precioContado)} COP
+                        </div>
+                        <span className="text-[9.5px] text-brand-muted">Tarifa oficial 2026</span>
+                      </div>
+
+                      <div className="bg-green-50/70 p-2.5 rounded border border-green-200 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-brand-success uppercase">Con Referido</span>
+                          <span className="text-[9px] bg-brand-success text-white px-1 py-0.5 rounded font-mono">
+                            -{kitResult.pricing.pctDesc}%
+                          </span>
+                        </div>
+                        <div className="text-base font-bold text-brand-success font-mono mt-1">
+                          ${fmt(kitResult.pricing.precioReferido)} COP
+                        </div>
+                        <span className="text-[9.5px] text-brand-success font-semibold">
+                          Ahorro: ${fmt(kitResult.pricing.ahorroReferido)}
                         </span>
-                      </li>
-                    )}
-                  </ul>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -1035,27 +964,45 @@ export default function DimensionadorTab({
                   <li><span className="k">Baterías</span><span className="v">{calculo.batteryOpt?.qty} un · {calculo.batteryOpt?.modelKey} · {fmt(calculo.batteryOpt?.totalKwh, 1)} kWh</span></li>
                 </ul>
 
-                {optimizedResult.pricing?.precioFinal && (
-                  <ul className="kit-specs mt-3 pt-2 border-t border-border space-y-1">
-                    <li>
-                      <span className="k">Precio de lista (sin descuento)</span>
-                      <span className="v text-brand-muted line-through text-xs">${fmt(optimizedResult.pricing.precioFinal)} COP</span>
-                    </li>
-                    <li>
-                      <span className="k font-semibold text-brand-success">Precio con descuento</span>
-                      <span className="v text-brand-success font-bold text-base">
-                        ${fmt(optimizedResult.pricing.precioConDescuento || optimizedResult.pricing.precioFinal)} COP
-                      </span>
-                    </li>
-                    {optimizedResult.pricing.precioConDescuento && optimizedResult.pricing.precioFinal > optimizedResult.pricing.precioConDescuento && (
-                      <li>
-                        <span className="k text-[11px] text-brand-muted">Ahorro comercial</span>
-                        <span className="v text-brand-muted font-mono text-xs">
-                          -${fmt(optimizedResult.pricing.precioFinal - optimizedResult.pricing.precioConDescuento)} COP
+                {/* LAS 3 MODALIDADES DE PRECIO DEL SISTEMA OPTIMIZADO */}
+                {optimizedResult.pricing?.precioContado && (
+                  <div className="mt-4 pt-3 border-t border-border">
+                    <div className="text-[11px] font-mono uppercase font-bold text-brand-muted mb-2 tracking-wider">
+                      Modalidades de Pago Oficiales:
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div className="bg-gray-50 p-2.5 rounded border border-border flex flex-col justify-between">
+                        <span className="text-[11px] font-semibold text-brand-muted">Normal (Crédito)</span>
+                        <div className="text-sm font-bold text-brand-text font-mono mt-1">
+                          ${fmt(optimizedResult.pricing.precioCredito)} COP
+                        </div>
+                        <span className="text-[9.5px] text-brand-muted">Financiado</span>
+                      </div>
+
+                      <div className="bg-blue-50/70 p-2.5 rounded border border-blue-200 flex flex-col justify-between">
+                        <span className="text-[11px] font-bold text-brand-blue uppercase">Contado</span>
+                        <div className="text-base font-bold text-brand-blue font-mono mt-1">
+                          ${fmt(optimizedResult.pricing.precioContado)} COP
+                        </div>
+                        <span className="text-[9.5px] text-brand-muted">Tarifa oficial 2026</span>
+                      </div>
+
+                      <div className="bg-green-50/70 p-2.5 rounded border border-green-200 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-brand-success uppercase">Con Referido</span>
+                          <span className="text-[9px] bg-brand-success text-white px-1 py-0.5 rounded font-mono">
+                            -{optimizedResult.pricing.pctDesc}%
+                          </span>
+                        </div>
+                        <div className="text-base font-bold text-brand-success font-mono mt-1">
+                          ${fmt(optimizedResult.pricing.precioReferido)} COP
+                        </div>
+                        <span className="text-[9.5px] text-brand-success font-semibold">
+                          Ahorro: ${fmt(optimizedResult.pricing.ahorroReferido)}
                         </span>
-                      </li>
-                    )}
-                  </ul>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : (
@@ -1064,7 +1011,7 @@ export default function DimensionadorTab({
           </section>
         </div>
 
-        {/* Resumen Económico de Instalación */}
+        {/* Resumen Económico */}
         <section className="card">
           <h2 className="section-title">Costo de instalación y análisis de margen</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -1127,6 +1074,12 @@ export default function DimensionadorTab({
               type="button"
               onClick={onReset}
               className="text-xs text-brand-muted hover:text-brand-danger font-semibold cursor-pointer"
+            >
+              Restablecer valores
+            </button>
+          </div>
+
+          {saveStatus &&"
             >
               Restablecer valores
             </button>
