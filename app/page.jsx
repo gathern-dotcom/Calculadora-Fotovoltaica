@@ -4,11 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import Header from '../components/Header';
 import DimensionadorTab from '../components/DimensionadorTab';
-import CatalogoTab from '../components/CatalogoTab';
 import ParametrosTab from '../components/ParametrosTab';
 import ProyectosTab from '../components/ProyectosTab';
-import ModalComercial from '../components/ModalComercial';
-import ModalViabilidad from '../components/ModalViabilidad';
 import {
   DEFAULT_BUSINESS_PARAMS,
   DEFAULT_INSTALL_PROJECT_PARAMS,
@@ -28,7 +25,7 @@ import {
 } from '../lib/solar-engine';
 
 export default function Home() {
-  // Pestaña activa: 'dimensionador' | 'catalogo' | 'parametros' | 'proyectos'
+  // Pestaña activa: 'dimensionador' | 'parametros' | 'proyectos'
   const [activeTab, setActiveTab] = useState('dimensionador');
 
   // Metadatos del cliente
@@ -70,10 +67,6 @@ export default function Home() {
   const [proyectos, setProyectos] = useState([]);
   const [loadingProyectos, setLoadingProyectos] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
-
-  // Modales
-  const [modalComercialOpen, setModalComercialOpen] = useState(false);
-  const [modalViabilidadOpen, setModalViabilidadOpen] = useState(false);
 
   // =========================================================================
   // MOTOR DE CÁLCULO EN TIEMPO REAL (REACTIVO)
@@ -364,7 +357,7 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Proyecto_FV_${(projectMeta.cliente || 'Sinergy').replace(/\\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `Proyecto_FV_${(projectMeta.cliente || 'Sinergy').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -397,6 +390,34 @@ export default function Home() {
     setSaveStatus(null);
   };
 
+  // Enlace directo a WhatsApp con ficha técnica y comercial
+  const handleOpenCommercialCard = () => {
+    const kit = calculationData.kitResult?.kit;
+    const precio = calculationData.kitResult?.pricing?.precioContado || calculationData.kitResult?.pricing?.precioFinal;
+    const texto = encodeURIComponent(
+      `*PROPUESTA COMERCIAL — SINERGY SOLUCIONES INTEGRALES*\n\n` +
+      `👤 *Cliente:* ${projectMeta.cliente || 'Estimado cliente'}\n` +
+      `📍 *Ubicación:* ${projectMeta.ubicacion || 'Colombia'}\n` +
+      `☀️ *Kit Recomendado:* ${kit ? `${kit.id} —${kit.nombre}` : 'Personalizado'}\n` +
+      `⚡ *Potencia FV:* ${calculationData.calculo.numPaneles} paneles (${calculationData.calculo.numPaneles * siteParams.panelW} Wp)\n` +
+      `🔋 *Baterías:* ${calculationData.calculo.numBatteries} unidades (${calculationData.calculo.bankKwh.toFixed(1)} kWh)\n` +
+      `🔌 *Inversor:* ${calculationData.calculo.inverterW / 1000} kW (120/240V)\n\n` +
+      `💰 *Precio de Contado:* $${Number(precio || 0).toLocaleString('es-CO')} COP\n\n` +
+      `_Propuesta válida por 15 días. Incluye soporte, cableado y protecciones DC._`
+    );
+    const phone = (projectMeta.telefono || '').replace(/\D/g, '');
+    const cleanPhone = phone ? (phone.startsWith('57') ? phone : `57${phone}`) : '';
+    const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${texto}` : `https://wa.me/?text=${texto}`;
+    window.open(url, '_blank');
+  };
+
+  // Solicitud de Viabilidad
+  const handleOpenViability = () => {
+    const nombre = projectMeta.cliente || 'Cliente';
+    const kit = calculationData.kitResult?.kit?.nombre || 'Personalizado';
+    alert(`✓ Solicitud de Viabilidad generada para ${nombre}.\nKit: ${kit} (${calculationData.calculo.inverterW}W).\nSe enviará a verificación técnica.`);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-brand-text flex flex-col font-sans">
       {/* Encabezado con navegación de pestañas */}
@@ -426,12 +447,10 @@ export default function Home() {
             saveStatus={saveStatus}
             advisories={advisories}
             onToggleAdvisory={handleToggleAdvisory}
-            onOpenCommercialCard={() => setModalComercialOpen(true)}
-            onOpenViability={() => setModalViabilidadOpen(true)}
+            onOpenCommercialCard={handleOpenCommercialCard}
+            onOpenViability={handleOpenViability}
           />
         )}
-
-        {activeTab === 'catalogo' && <CatalogoTab />}
 
         {activeTab === 'parametros' && (
           <ParametrosTab
@@ -454,30 +473,6 @@ export default function Home() {
           />
         )}
       </div>
-
-      {/* Modal Ficha Comercial WhatsApp */}
-      {modalComercialOpen && (
-        <ModalComercial
-          isOpen={modalComercialOpen}
-          onClose={() => setModalComercialOpen(false)}
-          projectMeta={projectMeta}
-          calculo={calculationData.calculo}
-          kitResult={calculationData.kitResult}
-          projectTotals={calculationData.projectTotals}
-        />
-      )}
-
-      {/* Modal Solicitud de Viabilidad */}
-      {modalViabilidadOpen && (
-        <ModalViabilidad
-          isOpen={modalViabilidadOpen}
-          onClose={() => setModalViabilidadOpen(false)}
-          projectMeta={projectMeta}
-          calculo={calculationData.calculo}
-          kitResult={calculationData.kitResult}
-          installResult={calculationData.installResult}
-        />
-      )}
     </div>
   );
 }
